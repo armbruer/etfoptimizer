@@ -1,0 +1,7 @@
+- dash: bring plotly to the web (aka the frontend)
+- plotly: graphing library (charts, etc) - better than matplotlib I would say as this integrates with dash and we will need a frontend...
+- pandas: data analysis library
+- scrapy: for webcrawlers
+- psycopg2: adapter SQL (postgresql)
+- SQLAlchemy: object relational mapper (abstract away from sql code)
+- Database: postgresql: why? fast, good with finance stuff
