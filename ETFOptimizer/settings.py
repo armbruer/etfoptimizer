@@ -17,7 +17,8 @@ NEWSPIDER_MODULE = 'ETFOptimizer.spiders'
 #USER_AGENT = 'ETFOptimizer (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
+ROBOTSTXT_OBEY = False
+LOG_LEVEL = 'INFO'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
