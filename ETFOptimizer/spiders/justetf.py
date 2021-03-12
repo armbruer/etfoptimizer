@@ -53,7 +53,10 @@ class JustetfSpider(scrapy.Spider):
             next_page = self.driver.find_element_by_xpath('//a[@id="etfsTable_next"]')
             if not next_page.is_enabled() or not next_page.is_displayed():
                 break
-            next_page.click()
+
+            # a hacky fix for not being able to click on the next_page button
+            # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
+            self.driver.execute_script("arguments[0].click();", next_page)
         self.driver.close()
         logging.info("Finished parsing")
 
