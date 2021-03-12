@@ -4,7 +4,23 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from itemloaders.processors import MapCompose
 from scrapy import Field
+from datetime import datetime
+
+
+def strip_number(x: str):
+    for s in x.split('\n\t %'):
+        if s.isdigit():
+            return int(s)
+        elif s.isdecimal():
+            # convert percentage
+            return float(s)/100
+
+
+def string_to_date(x: str):
+    # converts dates of format 01 January 1999
+    return datetime.strptime(x, '%d %B %Y')
 
 
 class EtfItem(scrapy.Item):
@@ -14,16 +30,22 @@ class EtfItem(scrapy.Item):
     wkn = Field()
 
     # risk
-    fund_size = Field()
+    fund_size = Field(
+        input_processor=MapCompose(strip_number)
+    )
     replication = Field()
     legal_structure = Field()
     strategy_risk = Field()
     fund_currency = Field()
     currency_risk = Field()
-    volatility_one_year = Field()
+    volatility_one_year = Field(
+        input_processors=MapCompose(strip_number)
+    )
     inception = Field()
     # fees
-    ter = Field()
+    ter = Field(
+        input_processors=MapCompose(strip_number)
+    )
     # dividend/taxes
     distribution_policy = Field()
     distribution_frequency = Field()

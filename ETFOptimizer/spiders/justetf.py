@@ -23,7 +23,6 @@ class JustetfSpider(scrapy.Spider):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.driver = webdriver.Chrome()
-
         # Use headless option to not open a new browser window
         #options = webdriver.ChromeOptions()
         #options.add_argument("headless")
@@ -83,7 +82,6 @@ class JustetfSpider(scrapy.Spider):
             logging.warning("No cookie message was found. Continuing ...")
 
     def parse_item(self, response):
-        # TODO nonstrings should be parsed properly
         isin_parent = response.xpath('//span[@class="vallabel" and .="ISIN"]/..')
         name = isin_parent.xpath('../*[1]/text()').getall()
         logging.info(f"Parsing ETF '{name}'")
