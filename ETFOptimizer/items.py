@@ -2,19 +2,27 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
+from typing import List, Any
 
 import scrapy
 from itemloaders.processors import MapCompose
 from scrapy import Field
 from datetime import datetime
 
+from dbconnector import JustetfItem
+
 
 def strip_number(x: str):
-    for s in x.split('\n\t %'):
+    import logging
+    x = x.replace('%', '')
+    x = x.replace(',', '')  # to handle numbers like this 7,000
+    for s in x.split():
         if s.isdigit():
+            logging.info(f"Ran strip_number: {int(s)}")
             return int(s)
         elif s.isdecimal():
             # convert percentage
+            logging.info(f"Ran strip_number: {float(s)/100}")
             return float(s)/100
 
 
@@ -85,3 +93,52 @@ class EtfItem(scrapy.Item):
     securities_lending = Field()
     securities_lending_counterparty = Field()
 
+    def to_justetf_item(self) -> JustetfItem:
+        j = JustetfItem()
+        j.name = l2v(self, 'name')
+        j.isin = l2v(self, 'isin')
+        j.wkn = l2v(self, 'wkn')
+
+        j.fund_size = l2v(self, 'fund_size')
+        j.replication = l2v(self, 'replication')
+        j.legal_structure = l2v(self, 'legal_structure')
+        j.strategy_risk = l2v(self, 'strategy_risk')
+        j.fund_currency = l2v(self, 'fund_currency')
+        j.volatility_one_year = l2v(self, 'volatility_one_year')
+        j.inception = l2v(self, 'inception')
+
+        j.ter = l2v(self, 'ter')
+        j.distribution_policy = l2v(self, 'distribution_policy')
+        j.distribution_frequency = l2v(self, 'distribution_frequency')
+        j.fund_domicile = l2v(self, 'fund_domicile')
+        j.tax_data = l2v(self, 'tax_data')
+
+        j.fund_structure = l2v(self, 'fund_structure')
+        j.ucits_compliance = l2v(self, 'ucits_compliance')
+        j.fund_provider = l2v(self, 'fund_provider')
+        j.administrator = l2v(self, 'administrator')
+        j.investment_advisor = l2v(self, 'investment_advisor')
+        j.custodian_bank = l2v(self, 'custodian_bank')
+        j.revision_company = l2v(self, 'revision_company')
+        j.fiscal_year_end = l2v(self, 'fiscal_year_end')
+        j.swiss_representative = l2v(self, 'swiss_representative')
+        j.swiss_paying_agent = l2v(self, 'swiss_paying_agent')
+
+        j.switzerland = l2v(self, 'switzerland')
+        j.austria = l2v(self, 'austria')
+        j.uk = l2v(self, 'uk')
+
+        j.indextype = l2v(self, 'indextype')
+        j.swap_counterparty = l2v(self, 'swap_counterparty')
+        j.collateral_manager = l2v(self, 'collateral_manager')
+        j.securities_lending = l2v(self, 'securities_lending')
+        j.securities_lending_counterparty = l2v(self, 'securities_lending_counterparty')
+
+        return j
+
+
+def l2v(item: EtfItem, name: str):
+    if isinstance(item[name], list):
+        return None if not item[name] else item[name][0]
+    else:
+        return None if item[name] == '-' else item[name]
