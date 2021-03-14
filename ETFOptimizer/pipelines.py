@@ -7,6 +7,9 @@
 # useful for handling different item types with a single interface
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+import logging
 
 from dbmapper import StaticETFs
 
@@ -33,17 +36,23 @@ class JustetfPipeline:
     def open_spider(self, spider):
         self.engine = create_engine(f'postgresql+psycopg2://{self.user}:{self.password}'
                                     f'@{self.host}:{self.port}/{self.database}')
+        Base = declarative_base()
+        Base.metadata.create_all(self.engine)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
+        logging.info(f"Opened connection to database")
         self.password = ""  # todo
 
     def close_spider(self, spider):
         self.session.commit()
         self.session.flush()
+        logging.info(f"Saved all items in database")
         self.engine.dispose()  # todo
 
 
     def process_item(self, item, spider):
         etf = StaticETFs.fromItem(item)
         self.session.add(etf)
+        logging.info(f"Preparing to save {item['name']} in database")
+
         return item
