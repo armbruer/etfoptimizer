@@ -58,41 +58,41 @@ class StaticETFs(Base):
     @staticmethod
     def fromItem(i: EtfItem):
         e = StaticETFs()
-        e.name = i.name
-        e.isin = i.isin
-        e.wkn = i.wkn
+        e.name = i['name']
+        e.isin = i['isin']
+        e.wkn = i['wkn']
 
-        e.fund_size = i.fund_size
-        e.replication = i.replication
-        e.legal_structure = i.legal_structure
-        e.strategy_risk = i.strategy_risk
-        e.fund_currency = i.fund_currency
-        e.volatility_one_year = i.volatility_one_year
-        e.inception = i.inception
+        e.fund_size = i['fund_size']
+        e.replication = i['replication']
+        e.legal_structure = i['legal_structure']
+        e.strategy_risk = i['strategy_risk']
+        e.fund_currency = i['fund_currency']
+        e.volatility_one_year = i['volatility_one_year']
+        e.inception = i['inception']
 
-        e.ter = i.ter
-        e.distribution_policy = i.distribution_policy
-        e.distribution_frequency = i.distribution_frequency
-        e.fund_domicile = i.fund_domicile
-        e.tax_data = i.tax_data
+        e.ter = i['ter']
+        e.distribution_policy = i['distribution_policy']
+        e.distribution_frequency = i['distribution_frequency']
+        e.fund_domicile = i['fund_domicile']
+        e.tax_data = i['tax_data']
 
-        e.fund_structure = i.fund_structure
-        e.ucits_compliance = i.ucits_compliance
-        e.fund_provider = i.fund_provider
-        e.administrator = i.administrator
-        e.investment_advisor = i.investment_advisor
-        e.custodian_bank = i.custodian_bank
-        e.revision_company = i.revision_company
-        e.fiscal_year_end = i.fiscal_year_end
-        e.swiss_representative = i.swiss_representative
-        e.swiss_paying_agent = i.swiss_paying_agent
+        e.fund_structure = i['fund_structure']
+        e.ucits_compliance = i['ucits_compliance']
+        e.fund_provider = i['fund_provider']
+        e.administrator = i['administrator']
+        e.investment_advisor = i['investment_advisor']
+        e.custodian_bank = i['custodian_bank']
+        e.revision_company = i['revision_company']
+        e.fiscal_year_end = i['fiscal_year_end']
+        e.swiss_representative = i['swiss_representative']
+        e.swiss_paying_agent = i['swiss_paying_agent']
 
-        e.switzerland = i.switzerland
-        e.austria = i.austria
-        e.uk = i.uk
+        e.switzerland = i['switzerland']
+        e.austria = i['austria']
+        e.uk = i['uk']
 
-        e.indextype = i.indextype
-        e.swap_counterparty = i.swap_counterparty
-        e.collateral_manager = i.collateral_manager
-        e.securities_lending = i.securities_lending
-        e.securities_lending_counterparty = i.securities_lending_counterparty
+        e.indextype = i['indextype']
+        e.swap_counterparty = i['swap_counterparty']
+        e.collateral_manager = i['collateral_manager']
+        e.securities_lending = i['securities_lending']
+        e.securities_lending_counterparty = i['securities_lending_counterparty']
