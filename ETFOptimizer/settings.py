@@ -18,7 +18,7 @@ NEWSPIDER_MODULE = 'ETFOptimizer.spiders'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
-LOG_LEVEL = 'DEBUG'
+LOG_LEVEL = 'INFO'
 
 # Database
 POSTGRE_USER = 'postgres'
@@ -65,14 +65,15 @@ POSTGRE_DB = 'etf_optimization'
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
 #EXTENSIONS = {
+#    'scrapy_jsonrpc.webservice.WebService': 500,
 #    'scrapy.extensions.telnet.TelnetConsole': None,
 #}
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ETFOptimizer.pipelines.EtfoptimizerPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'ETFOptimizer.pipelines.JustetfPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
