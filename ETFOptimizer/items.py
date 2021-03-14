@@ -2,28 +2,35 @@
 #
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
-from typing import List, Any
 
-import scrapy
-from itemloaders.processors import MapCompose
-from scrapy import Field
 from datetime import datetime
 
+from itemloaders.processors import MapCompose, TakeFirst
+from scrapy import Field, Item
+from scrapy.loader import ItemLoader
 from dbconnector import JustetfItem
 
 
-def strip_number(x: str):
-    import logging
-    x = x.replace('%', '')
-    x = x.replace(',', '')  # to handle numbers like this 7,000
-    for s in x.split():
+def strip_int(x: str):
+    t = x.replace(',', '')  # to handle numbers like this 7,000
+    for s in t.split():
         if s.isdigit():
-            logging.info(f"Ran strip_number: {int(s)}")
             return int(s)
         elif s.isdecimal():
             # convert percentage
-            logging.info(f"Ran strip_number: {float(s)/100}")
             return float(s)/100
+
+    return None
+
+
+def strip_float(x: str):
+    t = x.replace('%', '')
+    for s in t.split():
+        if s.isdecimal():
+            # convert percentage
+            return float(s)/100
+
+    return None
 
 
 def string_to_date(x: str):
@@ -36,31 +43,33 @@ def string_to_day(x: str):
     return datetime.strptime(x, '%d %B')
 
 
-class EtfItem(scrapy.Item):
+class EtfItemLoader(ItemLoader):
+
+    default_output_processor = TakeFirst()
+    fund_size_in = MapCompose(strip_int)
+    volatility_one_year_in = MapCompose(strip_float)
+    inception_in = MapCompose(string_to_date)
+    ter_in = MapCompose(strip_float)
+    fiscal_year_end_in=MapCompose(string_to_day)
+
+
+class EtfItem(Item):
     # name,isin,wkn
     name = Field()
     isin = Field()
     wkn = Field()
 
     # risk
-    fund_size = Field(
-        input_processor=MapCompose(strip_number)
-    )
+    fund_size = Field()
     replication = Field()
     legal_structure = Field()
     strategy_risk = Field()
     fund_currency = Field()
     currency_risk = Field()
-    volatility_one_year = Field(
-        input_processors=MapCompose(strip_number)
-    )
-    inception = Field(
-        input_processors=MapCompose(string_to_date)
-    )
+    volatility_one_year = Field()
+    inception = Field()
     # fees
-    ter = Field(
-        input_processors=MapCompose(strip_number)
-    )
+    ter = Field()
     # dividend/taxes
     distribution_policy = Field()
     distribution_frequency = Field()
@@ -75,9 +84,7 @@ class EtfItem(scrapy.Item):
     investment_advisor = Field()
     custodian_bank = Field()
     revision_company = Field()
-    fiscal_year_end = Field(
-        input_processors=MapCompose(string_to_day)
-    )
+    fiscal_year_end = Field()
     swiss_representative = Field()
     swiss_paying_agent = Field()
 

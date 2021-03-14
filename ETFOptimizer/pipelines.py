@@ -30,6 +30,7 @@ class JustetfPipeline:
         logging.info(f"Preparing to save {etf.name} in database")
 
         try:
+            # TODO query first to check if entry already exists!
             self.session.add(etf)
             self.session.commit()
         except:

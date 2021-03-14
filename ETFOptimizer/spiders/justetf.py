@@ -3,12 +3,11 @@ import time
 
 import scrapy
 from scrapy import Request
-from scrapy.loader import ItemLoader
 from scrapy.selector import Selector
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
-from ETFOptimizer.items import EtfItem
+from ETFOptimizer.items import EtfItem, EtfItemLoader
 
 
 def get_detail_table_values(selector, table_size):
@@ -96,12 +95,13 @@ class JustetfSpider(scrapy.Spider):
         isin = isin_parent.xpath('*[2]/text()').getall()
         wkn = isin_parent.xpath('*[4]/text()').getall()
 
-        l = ItemLoader(item=EtfItem(), response=response)
+        l = EtfItemLoader(item=EtfItem(), response=response)
         l.add_value('name', name)
         l.add_value('isin', isin)
         l.add_value('wkn', wkn)
 
-        l.add_xpath('ter', '//div[@class="h5" and contains(text(), "Fees")]/../div[2]/div/div[1]/div[1]/text()')
+        ter = response.xpath('//div[@class="h5" and contains(text(), "Fees")]/../div[2]/div/div[1]/div[1]/text()').get()
+        l.add_value('ter', ter)
 
         risk_parent = response.xpath('//div[@class="h5" and contains(text(), "Risk")]/..')
 
@@ -132,7 +132,6 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('fund_provider', values[2])
         l.add_value('administrator', values[3])
         l.add_value('investment_advisor', values[4])
-        logging.info(f'investment_advisor {values[4]}')
         l.add_value('custodian_bank', values[5])
         l.add_value('revision_company', values[6])
         l.add_value('fiscal_year_end', values[7])
@@ -156,6 +155,6 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('securities_lending_counterparty', values[4])
 
         for field in l.item.fields:
-            l.item.setdefault(field, 'NULL')  # todo
+            l.item.setdefault(field, None)  # todo this is horrible
 
         return l.load_item()
