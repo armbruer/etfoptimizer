@@ -23,6 +23,11 @@ def string_to_date(x: str):
     return datetime.strptime(x, '%d %B %Y')
 
 
+def string_to_day(x: str):
+    # converts dates of format 01 January
+    return datetime.strptime(x, '%d %B')
+
+
 class EtfItem(scrapy.Item):
     # name,isin,wkn
     name = Field()
@@ -41,7 +46,9 @@ class EtfItem(scrapy.Item):
     volatility_one_year = Field(
         input_processors=MapCompose(strip_number)
     )
-    inception = Field()
+    inception = Field(
+        input_processors=MapCompose(string_to_date)
+    )
     # fees
     ter = Field(
         input_processors=MapCompose(strip_number)
@@ -60,7 +67,9 @@ class EtfItem(scrapy.Item):
     investment_advisor = Field()
     custodian_bank = Field()
     revision_company = Field()
-    fiscal_year_end = Field()
+    fiscal_year_end = Field(
+        input_processors=MapCompose(string_to_day)
+    )
     swiss_representative = Field()
     swiss_paying_agent = Field()
 

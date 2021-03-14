@@ -20,6 +20,13 @@ NEWSPIDER_MODULE = 'ETFOptimizer.spiders'
 ROBOTSTXT_OBEY = False
 LOG_LEVEL = 'DEBUG'
 
+# Database
+POSTGRE_USER = 'postgres'
+POSTGRE_PASSWORD = 'Y4w3T48qWSYqQGWRakoh'
+POSTGRE_HOST = 'localhost'
+POSTGRE_PORT = '5432'
+POSTGRE_DB = 'etf_optimization'
+
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
