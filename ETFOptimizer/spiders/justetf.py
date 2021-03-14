@@ -50,7 +50,10 @@ class JustetfSpider(scrapy.Spider):
             logging.info(f"Extracted etfs from page {pagenum}")
             pagenum += 1
             next_page = self.driver.find_element_by_xpath('//a[@id="etfsTable_next"]')
-            if not next_page.is_enabled() or not next_page.is_displayed():
+            disabled = next_page.get_attribute('class').find('disabled')
+            logging.info(f"Disabled? {disabled}, {next_page.get_attribute('class')}")
+            if not next_page.is_enabled() or not next_page.is_displayed() \
+                    or disabled != -1:
                 break
 
             # a hacky fix for not being able to click on the next_page button
