@@ -28,4 +28,5 @@ Setup
     2. Run `createdb <database name>` to create the database
 3. In `settings.py` adapt the parameter `SQL_URI` to your database configuration. The required format is
 `SQL_URI = 'postgresql+psycopg2://<user>:<password>:<port>/<database name>'`.
+4. To crawl the justetf.com webpage run `scrapy crawl justetf`. 
     
