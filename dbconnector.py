@@ -25,6 +25,9 @@ class JustetfItem(Base):
     name = Column(String)
     wkn = Column(String)
 
+    #other
+    benchmark_index = Column(String)
+
     # risk
     fund_size = Column(Integer)
     replication = Column(String)

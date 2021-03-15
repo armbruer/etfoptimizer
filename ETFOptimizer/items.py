@@ -63,6 +63,9 @@ class EtfItem(Item):
     isin = Field()
     wkn = Field()
 
+    #other
+    benchmark_index = Field()
+
     # risk
     fund_size = Field()
     replication = Field()
@@ -109,6 +112,8 @@ class EtfItem(Item):
         j.name = l2v(self, 'name')
         j.isin = l2v(self, 'isin')
         j.wkn = l2v(self, 'wkn')
+
+        j.benchmark_index = l2v(self, 'benchmark_index')
 
         j.fund_size = l2v(self, 'fund_size')
         j.replication = l2v(self, 'replication')
