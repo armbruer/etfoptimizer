@@ -43,14 +43,18 @@ def string_to_day(x: str):
     return datetime.strptime(x, '%d %B')
 
 
+def empty_to_none(x: str):
+    return x if x.strip() != '-' else None
+
+
 class EtfItemLoader(ItemLoader):
 
     default_output_processor = TakeFirst()
     fund_size_in = MapCompose(strip_int)
     volatility_one_year_in = MapCompose(strip_float)
-    inception_in = MapCompose(string_to_date)
+    inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
-    fiscal_year_end_in=MapCompose(string_to_day)
+    fiscal_year_end_in=MapCompose(empty_to_none, string_to_day)
 
 
 class EtfItem(Item):

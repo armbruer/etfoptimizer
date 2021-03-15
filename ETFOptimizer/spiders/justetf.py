@@ -56,9 +56,6 @@ class JustetfSpider(scrapy.Spider):
                     or disabled != -1:
                 break
 
-            if pagenum != 1:
-                break
-
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
             self.driver.execute_script("arguments[0].click();", next_page)
