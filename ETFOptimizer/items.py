@@ -55,6 +55,8 @@ class EtfItemLoader(ItemLoader):
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
     fiscal_year_end_in=MapCompose(empty_to_none, string_to_day)
+    benchmark_index_in=MapCompose(str.strip)
+    isin_in = MapCompose(lambda x: x.replace(',', ''))
 
 
 class EtfItem(Item):
