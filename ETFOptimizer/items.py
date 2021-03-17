@@ -61,6 +61,8 @@ class EtfItemLoader(ItemLoader):
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
     fiscal_year_end_in=MapCompose(empty_to_none, string_to_day)
+    benchmark_index_in=MapCompose(str.strip)
+    isin_in = MapCompose(lambda x: x.replace(',', ''))
 
 
 class EtfItem(Item):
@@ -68,6 +70,9 @@ class EtfItem(Item):
     name = Field()
     isin = Field()
     wkn = Field()
+
+    #other
+    benchmark_index = Field()
 
     # risk
     fund_size = Field()
@@ -115,6 +120,8 @@ class EtfItem(Item):
         j.name = l2v(self, 'name')
         j.isin = l2v(self, 'isin')
         j.wkn = l2v(self, 'wkn')
+
+        j.benchmark_index = l2v(self, 'benchmark_index')
 
         j.fund_size = l2v(self, 'fund_size')
         j.replication = l2v(self, 'replication')

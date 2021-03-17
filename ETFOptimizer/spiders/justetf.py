@@ -97,6 +97,9 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('isin', isin)
         l.add_value('wkn', wkn)
 
+        benchmark_index = response.xpath('//p/a[@class="label label-default labelwrap"]/text()').get()
+        l.add_value('benchmark_index', benchmark_index)
+
         ter = response.xpath('//div[@class="h5" and contains(text(), "Fees")]/../div[2]/div/div[1]/div[1]/text()').get()
         l.add_value('ter', ter)
 
