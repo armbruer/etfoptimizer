@@ -2,8 +2,8 @@ Supported Platforms
 ===================
 Windows & Linux, other platforms are untested
 
-Dependendencies
-===============
+Dependencies
+============
 * Python 3
 * Chrome Driver (required due to selenium)
     * Chrome might be sufficient, depending on your OS
@@ -13,12 +13,11 @@ Dependendencies
 * A local or remote database that is [compatible](https://www.sqlalchemy.org/features.html) with sqlalchemy. 
     *PostgreSQL* is strongly recommended as it is the only one tested.
     * Arch Linux [setup guide](https://wiki.archlinux.org/index.php/PostgreSQL) (most steps should also be applicable to other `systemd` based distributions)
+    * In Fedora there is one quirk: make sure you change `pg_hba.conf` as described in this [answer](https://support.plesk.com/hc/en-us/articles/360024041714-Unable-to-change-PostgreSQL-admin-password-or-log-in-to-PostgreSQL-on-Plesk-psql-FATAL-Ident-authentication-failed-for-user-postgres-)
     * Windows [setup guide](https://www.postgresqltutorial.com/install-postgresql/)
-* Python packages:
-    * ```pip install selenium```
-    * ```pip install scrapy```
-    * ```pip install sqlalchemy```
-    * ```pip install psycopg2```
+* Python packages: 
+    * selenium, scrapy, sqlalchemy
+    * Use `pip install -r requirements.txt` to install correct versions
     
 Setup
 =====
