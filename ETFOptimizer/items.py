@@ -25,18 +25,18 @@ def strip_int(x: str):
 
 
 def strip_float(x: str):
-    import logging
-    logging.info(f"Converting {x}")
     t = x.replace('%', '')
+    res = None
 
     for s in t.split():
-        if s.isdecimal():
-            import logging
-            logging.info(f"Reached conversion {float(s)/100}")
+        try:
             # convert percentage
-            return float(s)/100
+            res = float(s)/100
+            break
+        except:
+            continue
 
-    return None
+    return res
 
 
 def string_to_date(x: str):

@@ -2,7 +2,6 @@ import logging
 import time
 
 import scrapy
-import sqlalchemy
 from scrapy import Request
 from scrapy.selector import Selector
 from selenium import webdriver
