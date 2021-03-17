@@ -14,10 +14,16 @@ def db_connect():
 
 
 def create_table(engine):
+    """
+    Creates the 'etfs' table.
+    """
     Base.metadata.create_all(engine)
 
 
 class JustetfItem(Base):
+    """
+    Describes the columns of the etfs table.
+    """
     __tablename__ = 'etfs'
 
     # name,isin,wkn

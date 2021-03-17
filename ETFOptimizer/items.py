@@ -12,19 +12,22 @@ from dbconnector import JustetfItem
 
 
 def strip_int(x: str):
-    t = x.replace(',', '')  # to handle numbers like this 7,000
+    """
+    Returns the first integer in a string.
+    """
+    t = x.replace(',', '')  # to handle numbers like 7,000
 
     for s in t.split():
         if s.isdigit():
             return int(s)
-        elif s.isdecimal():
-            # convert percentage
-            return float(s)/100
 
     return None
 
 
 def strip_float(x: str):
+    """
+    Returns the first float in a string.
+    """
     t = x.replace('%', '')
     res = None
 
@@ -40,32 +43,40 @@ def strip_float(x: str):
 
 
 def string_to_date(x: str):
-    # converts dates of format 01 January 1999
+    """
+    Converts a string date of format 01 January 1999 into a date.
+    """
     return datetime.strptime(x, '%d %B %Y')
 
 
-def string_to_day(x: str):
-    # converts dates of format 01 January
-    return datetime.strptime(x, '%d %B')
-
-
 def empty_to_none(x: str):
+    """
+    Converts '-' value to None.
+    """
     return x if x.strip() != '-' else None
 
 
 class EtfItemLoader(ItemLoader):
+    """
+    The EtfItemLoader defines processors for converting parsed values into the correct datatype and
+    removing unwanted clutter from strings.
+    """
 
     default_output_processor = TakeFirst()
     fund_size_in = MapCompose(strip_int)
     volatility_one_year_in = MapCompose(strip_float)
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
-    fiscal_year_end_in=MapCompose(empty_to_none, string_to_day)
+    fiscal_year_end_in=MapCompose(empty_to_none)
     benchmark_index_in=MapCompose(str.strip)
     isin_in = MapCompose(lambda x: x.replace(',', ''))
 
 
 class EtfItem(Item):
+    """
+    EtfItem represents an etf on justetf.com
+    """
+
     # name,isin,wkn
     name = Field()
     isin = Field()
@@ -116,6 +127,10 @@ class EtfItem(Item):
     securities_lending_counterparty = Field()
 
     def to_justetf_item(self) -> JustetfItem:
+        """Converts an EtfItem into a JustetfItem.
+        The purpose is to convert from a scrapy representation to an sqlalchemy representation of the same item,
+        so the item can be stored in a database"""
+
         j = JustetfItem()
         j.name = l2v(self, 'name')
         j.isin = l2v(self, 'isin')

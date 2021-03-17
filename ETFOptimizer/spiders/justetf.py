@@ -10,25 +10,23 @@ from selenium.common.exceptions import NoSuchElementException
 from ETFOptimizer.items import EtfItem, EtfItemLoader
 
 
-def get_detail_table_values(selector, table_size, path='/td[2]/text()'):
-    values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
-    return values
-
-
 class JustetfSpider(scrapy.Spider):
     name = 'justetf'
     allowed_domains = ['justetf.com']
     start_urls = ['https://justetf.com/de-en/find-etf.html']
 
     def __init__(self, *a, **kw):
+        """
+        Creates a spider for crawling justetf.com website.
+        Prepares a chrome driver for parsing items.
+        """
         super().__init__(*a, **kw)
-        self.driver = webdriver.Chrome()
+
         # Use headless option to not open a new browser window
-        #options = webdriver.ChromeOptions()
-        #options.add_argument("headless")
-        #desired_capabilities = options.to_capabilities()
-        #self.driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
-        #self.driver.implicitly_wait(10)
+        options = webdriver.ChromeOptions()
+        options.add_argument("headless")
+        desired_capabilities = options.to_capabilities()
+        self.driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
 
     def parse(self, response, **kwargs):
         logging.info("Begin parsing ...")
@@ -36,15 +34,15 @@ class JustetfSpider(scrapy.Spider):
         self.driver.get(response.url)
         time.sleep(3)
 
-        self.handleCookies()
+        self.handle_cookies_popup()
         #self.increaseRows()
 
         pagenum = 1
         while True:
-            time.sleep(2.5) # give enough time for updating contents inside selenium browser
+            time.sleep(2.5)  # give enough time for updating contents inside selenium browser
             r = Selector(text=self.driver.page_source)
             for link in r.xpath('//tbody/tr[@role="row"]/td/a[@class="link"]/@href').getall():
-                logging.info("Found link:" + link)
+                logging.debug("Found link:" + link)
                 yield Request(link, callback=self.parse_item)
 
             logging.info(f"Extracted etfs from page {pagenum}")
@@ -56,8 +54,8 @@ class JustetfSpider(scrapy.Spider):
                 break
 
             # enable for debugging only
-            if next_page != 1:
-                break
+            # if next_page != 1:
+            #    break
 
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
@@ -65,7 +63,11 @@ class JustetfSpider(scrapy.Spider):
         self.driver.close()
         logging.info("Finished parsing")
 
-    def increaseRows(self):
+    def increase_rows(self):
+        """
+        Sets the number of rows (etfs) that are shown per page on justetf.com to 100.
+        Using this method should increase performance, as fewer requests are needed.
+        """
         # reduce the number of page loads required for better throughput, and fewer requests
         try:
             show_rows_button = self.driver.find_element_by_xpath('//a/span[contains(text(), "Show 25 rows")]/..')
@@ -77,7 +79,10 @@ class JustetfSpider(scrapy.Spider):
         except NoSuchElementException:
             logging.warning("Could not find rows selector button. Continuing ... ")
 
-    def handleCookies(self):
+    def handle_cookies_popup(self):
+        """
+        Clicks on 'Allow Selection' in the cookie selection popup when entering the website.
+        """
         try:
             # cookie settings: allow selection
             allow_selection_button = self.driver.find_element_by_xpath('//a[@id="CybotCookiebotDialogBodyLevel'
@@ -87,7 +92,18 @@ class JustetfSpider(scrapy.Spider):
         except NoSuchElementException:
             logging.warning("No cookie message was found. Continuing ...")
 
+    @staticmethod
+    def get_table_values(selector, table_size, path='/td[2]/text()'):
+        """
+        Get the text contents of a table on the justetf.com website given the selector, table_size and an optional path.
+        """
+        values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
+        return values
+
     def parse_item(self, response):
+        """
+        Parses the contents of a given webpage (response) into an EtfItem.
+        """
         isin_parent = response.xpath('//span[@class="vallabel" and .="ISIN"]/..')
         name = isin_parent.xpath('../*[1]/text()').getall()
         logging.info(f"Parsing ETF '{name}'")
@@ -113,7 +129,7 @@ class JustetfSpider(scrapy.Spider):
 
         l.add_value('fund_size', risk_parent.xpath('div[2]/div/div[1]/div[1]/text()').get())
         risk_table = risk_parent.xpath('table/tbody')
-        values = get_detail_table_values(risk_table, 7)
+        values = self.get_table_values(risk_table, 7)
         l.add_value('replication', risk_table.xpath('*[1]/td[2]/span[1]/text()').get())
         l.add_value('legal_structure', values[1])
         l.add_value('strategy_risk', values[2])
@@ -124,7 +140,7 @@ class JustetfSpider(scrapy.Spider):
 
         dividend_table = response.xpath('//div[@class="h5 margin-lineup" and contains(text(), "Dividend/ '
                                         'Taxes")]/../table/tbody')
-        values = get_detail_table_values(dividend_table, 4)
+        values = self.get_table_values(dividend_table, 4)
         l.add_value('distribution_policy', values[0])
         l.add_value('distribution_frequency', values[1])
         l.add_value('fund_domicile', values[2])
@@ -132,7 +148,7 @@ class JustetfSpider(scrapy.Spider):
 
         legal_structure_table = response.xpath('//div[@class="h5" and contains(text(), "Legal '
                                                'structure")]/../table/tbody')
-        values = get_detail_table_values(legal_structure_table, 10)
+        values = self.get_table_values(legal_structure_table, 10)
         l.add_value('fund_structure', values[0])
         l.add_value('ucits_compliance', values[1])
         l.add_value('fund_provider', values[2])
@@ -145,13 +161,13 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('swiss_paying_agent', values[9])
 
         tax_status_table = response.xpath('//td[contains(text(), "Switzerland")]/../..')
-        values = get_detail_table_values(tax_status_table, 3, path='/td[2]/span/text()')
+        values = self.get_table_values(tax_status_table, 3, path='/td[2]/span/text()')
         l.add_value('switzerland', values[0])
         l.add_value('austria', values[1])
         l.add_value('uk', values[2])
 
         replication_table = response.xpath('//td[contains(text(), "Indextype")]/../..', )
-        values = get_detail_table_values(replication_table, 5, path='/td[2]/span/text()')
+        values = self.get_table_values(replication_table, 5, path='/td[2]/span/text()')
         l.add_value('indextype', values[0])
         l.add_value('swap_counterparty', values[1])
         l.add_value('collateral_manager', values[2])
