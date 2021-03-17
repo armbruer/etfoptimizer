@@ -39,6 +39,7 @@ class JustetfPipeline:
                 self.session.add(etf)
                 self.session.commit()
         except:
+            logging.warning(f"Could not save data for {etf.name}!")
             self.session.rollback()
             raise
 

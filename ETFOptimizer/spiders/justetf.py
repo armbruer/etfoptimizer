@@ -10,8 +10,8 @@ from selenium.common.exceptions import NoSuchElementException
 from ETFOptimizer.items import EtfItem, EtfItemLoader
 
 
-def get_detail_table_values(selector, table_size):
-    values = [selector.xpath('*[' + str(i) + ']/td[2]/text()').get() for i in range(1, table_size + 1)]
+def get_detail_table_values(selector, table_size, path='/td[2]/text()'):
+    values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
     return values
 
 
@@ -55,6 +55,10 @@ class JustetfSpider(scrapy.Spider):
                     or disabled != -1:
                 break
 
+            # enable for debugging only
+            if next_page != 1:
+                break
+
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
             self.driver.execute_script("arguments[0].click();", next_page)
@@ -92,6 +96,9 @@ class JustetfSpider(scrapy.Spider):
         wkn = isin_parent.xpath('*[4]/text()').getall()
 
         l = EtfItemLoader(item=EtfItem(), response=response)
+        for field in l.item.fields:
+            l.item.setdefault(field, None)
+
         l.add_value('name', name)
         l.add_value('isin', isin)
         l.add_value('wkn', wkn)
@@ -137,23 +144,18 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('swiss_representative', values[8])
         l.add_value('swiss_paying_agent', values[9])
 
-        tax_status_table_parent = response.xpath('//div[@class="h5" and contains(text(), "Tax '
-                                                 'Status")]/..')
-        tax_status_table = tax_status_table_parent.xpath('table[1]/tbody')
-        values = get_detail_table_values(tax_status_table, 3)
+        tax_status_table = response.xpath('//td[contains(text(), "Switzerland")]/../..')
+        values = get_detail_table_values(tax_status_table, 3, path='/td[2]/span/text()')
         l.add_value('switzerland', values[0])
         l.add_value('austria', values[1])
         l.add_value('uk', values[2])
 
-        replication_table = tax_status_table_parent.xpath('table[2]/tbody')
-        values = get_detail_table_values(replication_table, 5)
+        replication_table = response.xpath('//td[contains(text(), "Indextype")]/../..', )
+        values = get_detail_table_values(replication_table, 5, path='/td[2]/span/text()')
         l.add_value('indextype', values[0])
         l.add_value('swap_counterparty', values[1])
         l.add_value('collateral_manager', values[2])
         l.add_value('securities_lending', values[3])
         l.add_value('securities_lending_counterparty', values[4])
-
-        for field in l.item.fields:
-            l.item.setdefault(field, None)  # todo this is horrible
 
         return l.load_item()

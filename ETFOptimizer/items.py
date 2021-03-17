@@ -128,6 +128,7 @@ class EtfItem(Item):
         j.legal_structure = l2v(self, 'legal_structure')
         j.strategy_risk = l2v(self, 'strategy_risk')
         j.fund_currency = l2v(self, 'fund_currency')
+        j.currency_risk = l2v(self, 'currency_risk')
         j.volatility_one_year = l2v(self, 'volatility_one_year')
         j.inception = l2v(self, 'inception')
 
