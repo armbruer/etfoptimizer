@@ -13,6 +13,7 @@ from dbconnector import JustetfItem
 
 def strip_int(x: str):
     t = x.replace(',', '')  # to handle numbers like this 7,000
+
     for s in t.split():
         if s.isdigit():
             return int(s)
@@ -24,9 +25,14 @@ def strip_int(x: str):
 
 
 def strip_float(x: str):
+    import logging
+    logging.info(f"Converting {x}")
     t = x.replace('%', '')
+
     for s in t.split():
         if s.isdecimal():
+            import logging
+            logging.info(f"Reached conversion {float(s)/100}")
             # convert percentage
             return float(s)/100
 

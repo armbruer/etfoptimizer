@@ -2,6 +2,7 @@ import logging
 import time
 
 import scrapy
+import sqlalchemy
 from scrapy import Request
 from scrapy.selector import Selector
 from selenium import webdriver
@@ -51,7 +52,6 @@ class JustetfSpider(scrapy.Spider):
             pagenum += 1
             next_page = self.driver.find_element_by_xpath('//a[@id="etfsTable_next"]')
             disabled = next_page.get_attribute('class').find('disabled')
-            logging.info(f"Disabled? {disabled}, {next_page.get_attribute('class')}")
             if not next_page.is_enabled() or not next_page.is_displayed() \
                     or disabled != -1:
                 break

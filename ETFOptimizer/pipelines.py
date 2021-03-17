@@ -8,8 +8,8 @@ import logging
 
 # useful for handling different item types with a single interface
 from sqlalchemy.orm import sessionmaker
+from dbconnector import db_connect, create_table, JustetfItem
 
-from dbconnector import db_connect, create_table
 
 class JustetfPipeline:
 
@@ -24,15 +24,20 @@ class JustetfPipeline:
     def close_spider(self, spider):
         self.session.close()
 
-
     def process_item(self, item, spider):
         etf = item.to_justetf_item()
         logging.info(f"Preparing to save {etf.name} in database")
 
         try:
-            # TODO query first to check if entry already exists!
-            self.session.add(etf)
-            self.session.commit()
+            etf_current = self.session.query(JustetfItem)
+            exists = etf_current.filter_by(isin=etf.isin).first() is not None
+            if exists:
+                logging.warning(f"{etf.name} is already in saved in database. "
+                                f"Updated values are not reflected in database. "
+                                f"Please delete the table 'etfs' to get fresh values into the database!")
+            else:
+                self.session.add(etf)
+                self.session.commit()
         except:
             self.session.rollback()
             raise
