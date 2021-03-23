@@ -64,9 +64,9 @@ class JustetfItem(Base):
     swiss_paying_agent = Column(String)
 
     # tax status
-    switzerland = Column(String)
-    austria = Column(String)
-    uk = Column(String)
+    tax_switzerland = Column(String)
+    tax_austria = Column(String)
+    tax_uk = Column(String)
 
     # replica,swap,securities lending
     indextype = Column(String)

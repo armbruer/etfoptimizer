@@ -162,9 +162,9 @@ class JustetfSpider(scrapy.Spider):
 
         tax_status_table = response.xpath('//td[contains(text(), "Switzerland")]/../..')
         values = self.get_table_values(tax_status_table, 3, path='/td[2]/span/text()')
-        l.add_value('switzerland', values[0])
-        l.add_value('austria', values[1])
-        l.add_value('uk', values[2])
+        l.add_value('tax_switzerland', values[0])
+        l.add_value('tax_austria', values[1])
+        l.add_value('tax_uk', values[2])
 
         replication_table = response.xpath('//td[contains(text(), "Indextype")]/../..', )
         values = self.get_table_values(replication_table, 5, path='/td[2]/span/text()')
