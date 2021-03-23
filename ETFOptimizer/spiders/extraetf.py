@@ -9,6 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import Select
 
 from ETFOptimizer.items import EtfItemLoader, EtfItem
+from ETFOptimizer.spiders.common import get_table_values, handle_cookies_popup
 
 
 class ExtraetfSpider(scrapy.Spider):
@@ -36,7 +37,7 @@ class ExtraetfSpider(scrapy.Spider):
         self.driver.get(response.url)
         time.sleep(3)
 
-        self.handle_cookies_popup()
+        handle_cookies_popup(self.driver, '//a[@id="CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection"]')
         #self.increase_rows()
 
         pagenum = 1
@@ -63,22 +64,6 @@ class ExtraetfSpider(scrapy.Spider):
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
             self.driver.execute_script("arguments[0].click();", next_page)
-        # time.sleep(5)
-        #self.driver.close()
-        logging.info("Finished parsing")
-
-    def handle_cookies_popup(self):
-        """
-        Clicks on 'Allow Selection' in the cookie selection popup when entering the website.
-        """
-        try:
-            # cookie settings: allow selection
-            allow_selection_button = self.driver.find_element_by_xpath('//a[@id="CybotCookiebotDialogBody'
-                                                                       'LevelButtonLevelOptinAllowallSelection"]')
-            allow_selection_button.click()
-            time.sleep(0.5)
-        except NoSuchElementException:
-            logging.warning("No cookie message was found. Continuing ...")
 
     def increase_rows(self):
         """
@@ -93,14 +78,6 @@ class ExtraetfSpider(scrapy.Spider):
             time.sleep(1)
         except NoSuchElementException:
             logging.warning("Could not find page limit selector. Continuing ... ")
-
-    @staticmethod
-    def get_table_values(selector, table_size, path):
-        """
-        Get the text contents of a table on the justetf.com website given the selector, table_size and an optional path.
-        """
-        values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
-        return values
 
     def parse_item(self, response):
         """
@@ -123,7 +100,7 @@ class ExtraetfSpider(scrapy.Spider):
 
         # main_data table
         main_parent = response.xpath('//tbody/tr/td[contains(text(), "(TER)")]/../..')
-        values = self.get_table_values(main_parent, 10, '/td[2]/text()')
+        values = get_table_values(main_parent, 10, '/td[2]/text()')
         item.add_value('ter', values[0])
         item.add_value('replication', values[1])  # TODO MERGE VALUES todo ADD abbildungsart
         item.add_value('distribution_policy', values[3])
@@ -138,7 +115,7 @@ class ExtraetfSpider(scrapy.Spider):
     def parse_item_details(self, response, item):
 
         legal_structure_parent = response.xpath('//tbody/tr/td[contains(text(), "Anbieter")]/../..')
-        values = self.get_table_values(legal_structure_parent, 8, '/td[2]/text()')
+        values = get_table_values(legal_structure_parent, 8, '/td[2]/text()')
 
         item.add_value('fund_provider', values[0])
         item.add_value('legal_structure', values[1])
@@ -150,7 +127,7 @@ class ExtraetfSpider(scrapy.Spider):
         item.add_value('custodian_bank', values[7])
 
         tax_parent = response.xpath('//tbody/tr/td[contains(text(), "Deutschland")]/../..')
-        values = self.get_table_values(tax_parent, 4, '/td[2]/text()')
+        values = get_table_values(tax_parent, 4, '/td[2]/text()')
 
         # TODO fund_size in million euros?
         # todo TAX_GERMANY?

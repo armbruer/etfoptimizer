@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
 from ETFOptimizer.items import EtfItem, EtfItemLoader
+from ETFOptimizer.spiders.common import get_table_values, handle_cookies_popup
 
 
 class JustetfSpider(scrapy.Spider):
@@ -34,7 +35,7 @@ class JustetfSpider(scrapy.Spider):
         self.driver.get(response.url)
         time.sleep(3)
 
-        self.handle_cookies_popup()
+        handle_cookies_popup(self.driver, '//a[@id="CybotCookiebotDialogBodyLevelButtonLevelOptinAllowallSelection"]')
         #self.increaseRows()
 
         pagenum = 1
@@ -60,8 +61,6 @@ class JustetfSpider(scrapy.Spider):
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
             self.driver.execute_script("arguments[0].click();", next_page)
-        self.driver.close()
-        logging.info("Finished parsing")
 
     def increase_rows(self):
         """
@@ -78,27 +77,6 @@ class JustetfSpider(scrapy.Spider):
             time.sleep(1)
         except NoSuchElementException:
             logging.warning("Could not find rows selector button. Continuing ... ")
-
-    def handle_cookies_popup(self):
-        """
-        Clicks on 'Allow Selection' in the cookie selection popup when entering the website.
-        """
-        try:
-            # cookie settings: allow selection
-            allow_selection_button = self.driver.find_element_by_xpath('//a[@id="CybotCookiebotDialogBodyLevel'
-                                                                       'ButtonLevelOptinAllowallSelection"]')
-            allow_selection_button.click()
-            time.sleep(0.5)
-        except NoSuchElementException:
-            logging.warning("No cookie message was found. Continuing ...")
-
-    @staticmethod
-    def get_table_values(selector, table_size, path='/td[2]/text()'):
-        """
-        Get the text contents of a table on the justetf.com website given the selector, table_size and an optional path.
-        """
-        values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
-        return values
 
     def parse_item(self, response):
         """
@@ -129,7 +107,7 @@ class JustetfSpider(scrapy.Spider):
 
         l.add_value('fund_size', risk_parent.xpath('div[2]/div/div[1]/div[1]/text()').get())
         risk_table = risk_parent.xpath('table/tbody')
-        values = self.get_table_values(risk_table, 7)
+        values = get_table_values(risk_table, 7, '/td[2]/text()')
         l.add_value('replication', risk_table.xpath('*[1]/td[2]/span[1]/text()').get())
         l.add_value('legal_structure', values[1])
         l.add_value('strategy_risk', values[2])
@@ -140,7 +118,7 @@ class JustetfSpider(scrapy.Spider):
 
         dividend_table = response.xpath('//div[@class="h5 margin-lineup" and contains(text(), "Dividend/ '
                                         'Taxes")]/../table/tbody')
-        values = self.get_table_values(dividend_table, 4)
+        values = get_table_values(dividend_table, 4, '/td[2]/text()')
         l.add_value('distribution_policy', values[0])
         l.add_value('distribution_frequency', values[1])
         l.add_value('fund_domicile', values[2])
@@ -148,7 +126,7 @@ class JustetfSpider(scrapy.Spider):
 
         legal_structure_table = response.xpath('//div[@class="h5" and contains(text(), "Legal '
                                                'structure")]/../table/tbody')
-        values = self.get_table_values(legal_structure_table, 10)
+        values = get_table_values(legal_structure_table, 10, '/td[2]/text()')
         l.add_value('fund_structure', values[0])
         l.add_value('ucits_compliance', values[1])
         l.add_value('fund_provider', values[2])
@@ -161,13 +139,13 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('swiss_paying_agent', values[9])
 
         tax_status_table = response.xpath('//td[contains(text(), "Switzerland")]/../..')
-        values = self.get_table_values(tax_status_table, 3, path='/td[2]/span/text()')
+        values = get_table_values(tax_status_table, 3, path='/td[2]/span/text()')
         l.add_value('tax_switzerland', values[0])
         l.add_value('tax_austria', values[1])
         l.add_value('tax_uk', values[2])
 
         replication_table = response.xpath('//td[contains(text(), "Indextype")]/../..', )
-        values = self.get_table_values(replication_table, 5, path='/td[2]/span/text()')
+        values = get_table_values(replication_table, 5, path='/td[2]/span/text()')
         l.add_value('indextype', values[0])
         l.add_value('swap_counterparty', values[1])
         l.add_value('collateral_manager', values[2])
