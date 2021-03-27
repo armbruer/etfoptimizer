@@ -17,6 +17,11 @@ class ExtraetfSpider(scrapy.Spider):
     allowed_domains = ['extraetf.com']
     start_urls = ['https://de.extraetf.com/etf-search']
     base_url = 'https://de.extraetf.com'
+    custom_settings = {
+        'ITEM_PIPELINES': {
+            'ETFOptimizer.pipelines.EtfPipeline': 300
+        }
+    }
 
     def __init__(self, *a, **kw):
         """

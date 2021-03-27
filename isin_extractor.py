@@ -5,7 +5,7 @@
 # this script ONLY after the database table etfs has been created.
 
 from sqlalchemy.orm import sessionmaker
-from dbconnector import db_connect, JustetfItem
+from dbconnector import db_connect, EtfItemDb
 import csv
 import logging
 
@@ -15,7 +15,7 @@ logging.info(pre + "Connected to database.")
 Session = sessionmaker(bind=engine)
 session = Session()
 
-isins = [etf.isin for etf in session.query(JustetfItem)]
+isins = [etf.isin for etf in session.query(EtfItemDb)]
 logging.info(pre + "Retrieved ISINs from database.")
 session.close()
 

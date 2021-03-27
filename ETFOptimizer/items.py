@@ -8,7 +8,8 @@ from datetime import datetime
 from itemloaders.processors import MapCompose, TakeFirst
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
-from dbconnector import JustetfItem
+from dbconnector import EtfItemDb
+import locale
 
 
 def strip_int(x: str):
@@ -46,7 +47,13 @@ def string_to_date(x: str):
     """
     Converts a string date of format 01 January 1999 into a date.
     """
-    return datetime.strptime(x, '%d %B %Y')
+    res = None
+    try:
+        res = datetime.strptime(x, '%d %B %Y')
+    except ValueError:
+        locale.setlocale(locale.LC_TIME, 'de_DE')
+        res = datetime.strptime(x, '%d %B %Y')
+    return res
 
 
 def empty_to_none(x: str):
@@ -82,9 +89,6 @@ class EtfItem(Item):
     isin = Field()
     wkn = Field()
 
-    #other
-    benchmark_index = Field()
-
     # risk
     fund_size = Field()
     replication = Field()
@@ -94,6 +98,11 @@ class EtfItem(Item):
     currency_risk = Field()
     volatility_one_year = Field()
     inception = Field()
+
+    # category
+    category = Field()
+    subcategory = Field()
+
     # fees
     ter = Field()
     # dividend/taxes
@@ -101,6 +110,9 @@ class EtfItem(Item):
     distribution_frequency = Field()
     fund_domicile = Field()
     tax_data = Field()
+
+    #other
+    benchmark_index = Field()
 
     # legal structure
     fund_structure = Field()
@@ -115,9 +127,9 @@ class EtfItem(Item):
     swiss_paying_agent = Field()
 
     # tax status
-    switzerland = Field()
-    austria = Field()
-    uk = Field()
+    tax_switzerland = Field()
+    tax_austria = Field()
+    tax_uk = Field()
 
     # replica,swap,securities lending
     indextype = Field()
@@ -126,17 +138,15 @@ class EtfItem(Item):
     securities_lending = Field()
     securities_lending_counterparty = Field()
 
-    def to_justetf_item(self) -> JustetfItem:
+    def to_etfitemdb(self) -> EtfItemDb:
         """Converts an EtfItem into a JustetfItem.
         The purpose is to convert from a scrapy representation to an sqlalchemy representation of the same item,
         so the item can be stored in a database"""
 
-        j = JustetfItem()
+        j = EtfItemDb()
         j.name = l2v(self, 'name')
         j.isin = l2v(self, 'isin')
         j.wkn = l2v(self, 'wkn')
-
-        j.benchmark_index = l2v(self, 'benchmark_index')
 
         j.fund_size = l2v(self, 'fund_size')
         j.replication = l2v(self, 'replication')
@@ -146,6 +156,11 @@ class EtfItem(Item):
         j.currency_risk = l2v(self, 'currency_risk')
         j.volatility_one_year = l2v(self, 'volatility_one_year')
         j.inception = l2v(self, 'inception')
+
+        j.benchmark_index = l2v(self, 'benchmark_index')
+
+        j.category = l2v(self, 'category')
+        j.subcategory = l2v(self, 'subcategory')
 
         j.ter = l2v(self, 'ter')
         j.distribution_policy = l2v(self, 'distribution_policy')
@@ -164,9 +179,9 @@ class EtfItem(Item):
         j.swiss_representative = l2v(self, 'swiss_representative')
         j.swiss_paying_agent = l2v(self, 'swiss_paying_agent')
 
-        j.switzerland = l2v(self, 'switzerland')
-        j.austria = l2v(self, 'austria')
-        j.uk = l2v(self, 'uk')
+        j.tax_switzerland = l2v(self, 'tax_switzerland')
+        j.tax_austria = l2v(self, 'tax_austria')
+        j.tax_uk = l2v(self, 'tax_uk')
 
         j.indextype = l2v(self, 'indextype')
         j.swap_counterparty = l2v(self, 'swap_counterparty')

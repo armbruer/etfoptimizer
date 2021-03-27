@@ -15,6 +15,11 @@ class JustetfSpider(scrapy.Spider):
     name = 'justetf'
     allowed_domains = ['justetf.com']
     start_urls = ['https://justetf.com/de-en/find-etf.html']
+    custom_settings = {
+        'ITEM_PIPELINES': {
+            'ETFOptimizer.pipelines.EtfPipeline': 300
+        }
+    }
 
     def __init__(self, *a, **kw):
         """

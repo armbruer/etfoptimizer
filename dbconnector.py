@@ -20,7 +20,7 @@ def create_table(engine):
     Base.metadata.create_all(engine)
 
 
-class JustetfItem(Base):
+class EtfItemDb(Base):
     """
     Describes the columns of the etfs table.
     """
@@ -31,9 +31,6 @@ class JustetfItem(Base):
     name = Column(String)
     wkn = Column(String)
 
-    #other
-    benchmark_index = Column(String)
-
     # risk
     fund_size = Column(Integer)
     replication = Column(String)
@@ -43,6 +40,14 @@ class JustetfItem(Base):
     currency_risk = Column(String)
     volatility_one_year = Column(String)
     inception = Column(Date)
+
+    #other
+    benchmark_index = Column(String)
+
+    # category
+    category = Column(String)
+    subcategory = Column(String)
+
     # fees
     ter = Column(Float)
     # dividend/taxes

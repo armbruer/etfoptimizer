@@ -67,9 +67,8 @@ SQL_URI = 'postgresql+psycopg2://postgres:Y4w3T48qWSYqQGWRakoh@localhost:5432/et
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    'ETFOptimizer.pipelines.JustetfPipeline': 300,
-}
+# ITEM_PIPELINES = {
+#}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

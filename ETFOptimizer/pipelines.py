@@ -8,10 +8,10 @@ import logging
 
 # useful for handling different item types with a single interface
 from sqlalchemy.orm import sessionmaker
-from dbconnector import db_connect, create_table, JustetfItem
+from dbconnector import db_connect, create_table, EtfItemDb
 
 
-class JustetfPipeline:
+class EtfPipeline:
 
     def __init__(self):
         engine = db_connect()
@@ -25,11 +25,49 @@ class JustetfPipeline:
         self.session.close()
 
     def process_item(self, item, spider):
-        etf = item.to_justetf_item()
+        # TODO support updating
+
+        etf = item.to_etfitemdb()
         logging.info(f"Preparing to save {etf.name} in database")
 
         try:
-            etf_current = self.session.query(JustetfItem)
+            etf_current = self.session.query(EtfItemDb)
+            exists = etf_current.filter_by(isin=etf.isin).first() is not None
+            if exists:
+                logging.warning(f"{etf.name} is already in saved in database. "
+                                f"Updated values are not reflected in database. "
+                                f"Please delete the table 'etfs' to get fresh values into the database!")
+            else:
+                self.session.add(etf)
+                self.session.commit()
+        except:
+            logging.warning(f"Could not save data for {etf.name}!")
+            self.session.rollback()
+            raise
+
+        return item
+
+class EtfCategoryPipeline:
+
+    def __init__(self):
+        engine = db_connect()
+        create_table(engine)
+        self.Session = sessionmaker(bind=engine)
+
+    def open_spider(self, spider):
+        self.session = self.Session()
+
+    def close_spider(self, spider):
+        self.session.close()
+
+    def process_item(self, item, spider):
+        # TODO support updating
+
+        etf = item.to_etfitemdb()
+        logging.info(f"Preparing to save category for {etf.name} in database")
+
+        try:
+            etf_current = self.session.query(EtfItemDb)
             exists = etf_current.filter_by(isin=etf.isin).first() is not None
             if exists:
                 logging.warning(f"{etf.name} is already in saved in database. "
