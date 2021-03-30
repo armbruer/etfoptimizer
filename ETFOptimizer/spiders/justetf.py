@@ -18,7 +18,8 @@ class JustetfSpider(scrapy.Spider):
     custom_settings = {
         'ITEM_PIPELINES': {
             'ETFOptimizer.pipelines.EtfPipeline': 300
-        }
+        },
+        'LOG_LEVEL': 'INFO'
     }
 
     def __init__(self, *a, **kw):
