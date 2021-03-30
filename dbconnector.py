@@ -1,7 +1,9 @@
 
-from sqlalchemy import Column, Integer, String, Date, Float, create_engine
+from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from scrapy.utils.project import get_project_settings
+from sqlalchemy.orm import relationship
+
 Base = declarative_base()
 
 
@@ -15,21 +17,28 @@ def db_connect():
 
 def create_table(engine):
     """
-    Creates the 'etfs' table.
+    Creates the tables if they do not exist.
     """
     Base.metadata.create_all(engine)
 
 
-class EtfItemDb(Base):
+def drop_static_tables(engine):
     """
-    Describes the columns of the etfs table.
+    Drops all tables with static data.
     """
-    __tablename__ = 'etfs'
+    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__, EtfCategory.__table__])
+
+
+class Etf(Base):
+    """
+    Describes the columns of the etf table.
+    """
+    __tablename__ = 'etf'
 
     # name,isin,wkn
     isin = Column(String, primary_key=True)
-    name = Column(String)
     wkn = Column(String)
+    name = Column(String)
 
     # risk
     fund_size = Column(Integer)
@@ -43,10 +52,6 @@ class EtfItemDb(Base):
 
     #other
     benchmark_index = Column(String)
-
-    # category
-    category = Column(String)
-    subcategory = Column(String)
 
     # fees
     ter = Column(Float)
@@ -64,7 +69,7 @@ class EtfItemDb(Base):
     investment_advisor = Column(String)
     custodian_bank = Column(String)
     revision_company = Column(String)
-    fiscal_year_end = Column(Date)
+    fiscal_year_end = Column(String)
     swiss_representative = Column(String)
     swiss_paying_agent = Column(String)
 
@@ -79,3 +84,27 @@ class EtfItemDb(Base):
     collateral_manager = Column(String)
     securities_lending = Column(String)
     securities_lending_counterparty = Column(String)
+
+    categories = relationship('EtfCategory', secondary='isin_category')
+
+
+class IsinCategory(Base):
+    """
+    Describes the columns of the table matching ISINs with categories.
+    """
+    __tablename__ = 'isin_category'
+
+    etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+
+
+class EtfCategory(Base):
+    """
+    Describes the columns of the categories table.
+    """
+    __tablename__ = 'category'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(String)
+
+    etfs = relationship('Etf', secondary='isin_category')

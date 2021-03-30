@@ -8,7 +8,7 @@ from datetime import datetime
 from itemloaders.processors import MapCompose, TakeFirst
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
-from dbconnector import EtfItemDb
+from dbconnector import Etf
 import locale
 
 
@@ -48,10 +48,12 @@ def string_to_date(x: str):
     Converts a string date of format 01 January 1999 into a date.
     """
     res = None
+    # TODO more locale flexibility, also test on Window$
     try:
+        locale.setlocale(locale.LC_ALL, 'en_US')
         res = datetime.strptime(x, '%d %B %Y')
     except ValueError:
-        locale.setlocale(locale.LC_TIME, 'de_DE')
+        locale.setlocale(locale.LC_ALL, 'de_DE')
         res = datetime.strptime(x, '%d %B %Y')
     return res
 
@@ -66,7 +68,7 @@ def empty_to_none(x: str):
 class EtfItemLoader(ItemLoader):
     """
     The EtfItemLoader defines processors for converting parsed values into the correct datatype and
-    removing unwanted clutter from strings.
+    removing unwanted clutter from strings for etf data.
     """
 
     default_output_processor = TakeFirst()
@@ -79,9 +81,14 @@ class EtfItemLoader(ItemLoader):
     isin_in = MapCompose(lambda x: x.replace(',', ''))
 
 
+class EtfCategoryItemLoader(ItemLoader):
+    default_output_processor = TakeFirst()
+    isin_in = MapCompose(lambda x: x.replace(',', ''))
+
+
 class EtfItem(Item):
     """
-    EtfItem represents an etf on justetf.com
+    EtfItem represents static data about an ETF.
     """
 
     # name,isin,wkn
@@ -98,10 +105,6 @@ class EtfItem(Item):
     currency_risk = Field()
     volatility_one_year = Field()
     inception = Field()
-
-    # category
-    category = Field()
-    subcategory = Field()
 
     # fees
     ter = Field()
@@ -138,12 +141,12 @@ class EtfItem(Item):
     securities_lending = Field()
     securities_lending_counterparty = Field()
 
-    def to_etfitemdb(self) -> EtfItemDb:
+    def to_etfitemdb(self) -> Etf:
         """Converts an EtfItem into a JustetfItem.
         The purpose is to convert from a scrapy representation to an sqlalchemy representation of the same item,
         so the item can be stored in a database"""
 
-        j = EtfItemDb()
+        j = Etf()
         j.name = l2v(self, 'name')
         j.isin = l2v(self, 'isin')
         j.wkn = l2v(self, 'wkn')
@@ -158,9 +161,6 @@ class EtfItem(Item):
         j.inception = l2v(self, 'inception')
 
         j.benchmark_index = l2v(self, 'benchmark_index')
-
-        j.category = l2v(self, 'category')
-        j.subcategory = l2v(self, 'subcategory')
 
         j.ter = l2v(self, 'ter')
         j.distribution_policy = l2v(self, 'distribution_policy')
@@ -192,8 +192,16 @@ class EtfItem(Item):
         return j
 
 
-def l2v(item: EtfItem, name: str):
-    if isinstance(item[name], list):
-        return None if not item[name] else item[name][0]
+class EtfCategoryItem(Item):
+    """
+    EtfCategoryItem represents the category and/or a subcategory of an ETF.
+    """
+    isin = Field()
+    category = Field()
+
+
+def l2v(item, key: str):
+    if isinstance(item[key], list):
+        return None if not item[key] else item[key][0]
     else:
-        return None if item[name] == '-' else item[name]
+        return None if item[key] == '-' or item[key] == '--' else item[key]
