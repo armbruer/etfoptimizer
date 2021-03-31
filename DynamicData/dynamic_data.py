@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 import pandas
 
@@ -6,8 +7,8 @@ from datetime import date, datetime
 from sqlalchemy import Column, Date, Float, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-
 Base = declarative_base()
+
 
 class DynamicData(Base):
     __tablename__ = 'dynamic data'
@@ -18,6 +19,7 @@ class DynamicData(Base):
     price = Column(Float)
     price_index = Column(Float)
     return_index = Column(Float)
+
 
 def get_isin_dict():
     isin_dict = {}
@@ -56,19 +58,25 @@ def get_dynamic_data(session):
             else:
                 return_index = float(dynamic_data.iloc[i, j])
 
-                data = DynamicData()
-                data.isin = isin
-                data.datapoint_date = date
-
-                data.price = price
-                data.price_index = price_index
-                data.return_index = return_index
-
                 try:
-                    session.add(data)
-                    session.commit()
+                    database_data = self.session.query(DynamicData)
+                    exists = database_data.filter_by(isin=data.isin, datapoint_date=data.datapoint_date).first() is not None
+                    if exists:
+                        logging.warning(f'Updated values are not reflected in database.')
+                    else:
+                        data = DynamicData()
+
+                        data.isin = isin
+                        data.datapoint_date = date
+
+                        data.price = price
+                        data.price_index = price_index
+                        data.return_index = return_index
+
+                        session.add(data)
+                        session.commit()
                 except:
-                    print('Could not save data for ' + data.isin + ".")
+                    logging.warning(f'Could not save data!')
                     self.session.rollback()
                     raise
 

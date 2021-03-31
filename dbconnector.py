@@ -50,7 +50,7 @@ class Etf(Base):
     volatility_one_year = Column(String)
     inception = Column(Date)
 
-    #other
+    # other
     benchmark_index = Column(String)
 
     # fees
