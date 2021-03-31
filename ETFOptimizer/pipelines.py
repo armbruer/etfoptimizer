@@ -36,9 +36,13 @@ class EtfPipeline:
             etf_current = self.session.query(Etf)
             exists = etf_current.filter_by(isin=etf.isin).first() is not None
             if exists:
-                logging.warning(f"{etf.name} is already in saved in database. "
-                                f"Updated values are not reflected in database. "
-                                f"Please delete the table 'etfs' to get fresh values into the database!")
+                database_data = etf_current.filter_by(isin=etf.isin).first()
+
+                database_data.fund_size = etf.fund_size
+                database_data.ter = etf.ter
+                # database_data.tax_germany = etf.tax_germany
+
+                self.session.commit()
             else:
                 self.session.add(etf)
                 self.session.commit()
