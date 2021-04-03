@@ -1,3 +1,5 @@
 .idea/
 __pycache__/
 geckodriver.log
+etfoptimizer.egg-info/
+venv/
