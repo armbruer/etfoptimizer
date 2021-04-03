@@ -18,6 +18,8 @@ Dependencies
 * Python packages: 
     * selenium, scrapy, sqlalchemy
     * Use `pip install -r requirements.txt` to install correct versions
+* On Linux: Ensure you have installed `de_DE` and `en_US` languages. 
+  Not sure yet if and what is required on Windows.
     
 Setup
 =====

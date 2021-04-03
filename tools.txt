@@ -1,3 +1,0 @@
-- dash: bring plotly to the web (aka the frontend)
-- plotly: graphing library (charts, etc) - better than matplotlib I would say as this integrates with dash and we will need a frontend...
-- pandas: data analysis library

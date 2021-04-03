@@ -12,11 +12,27 @@ from dbconnector import Etf
 import locale
 
 
+def string_to_bool(x: str):
+    """
+    Converts a string to a boolean.
+    """
+    x = x.strip().lower()
+    if x == 'ja' or x == 'yes':
+        return True
+    elif x == 'nein' or x == 'no':
+        return False
+    else:
+        return None
+
+
 def strip_int(x: str):
     """
     Returns the first integer in a string.
     """
+    # TODO there might be problematic numbers with a format like < 1 Million
+    # todo should this number be in millions or what?
     t = x.replace(',', '')  # to handle numbers like 7,000
+    t = t.replace('.', '')  # same problem, but in German: 7.000
 
     for s in t.split():
         if s.isdigit():
@@ -43,18 +59,23 @@ def strip_float(x: str):
     return res
 
 
+date_formats = [('en_US', '%d %B %Y'), ('de_DE', '%d %B %Y'), ('en_US', '%d.%m.%Y'), ('de_DE', '%d.%m.%Y')]
+
+
 def string_to_date(x: str):
     """
     Converts a string date of format 01 January 1999 into a date.
     """
     res = None
-    # TODO more locale flexibility, also test on Window$
-    try:
-        locale.setlocale(locale.LC_ALL, 'en_US')
-        res = datetime.strptime(x, '%d %B %Y')
-    except ValueError:
-        locale.setlocale(locale.LC_ALL, 'de_DE')
-        res = datetime.strptime(x, '%d %B %Y')
+    for format in date_formats:
+        lang, f = format
+        try:
+            locale.setlocale(locale.LC_ALL, lang)
+            res = datetime.strptime(x, '')
+            break
+        except ValueError:
+            pass  # continue conversion tries
+
     return res
 
 
@@ -77,6 +98,8 @@ class EtfItemLoader(ItemLoader):
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
     fiscal_year_end_in=MapCompose(empty_to_none)
+    ucits_compliance_in=MapCompose(string_to_bool)
+    securities_lending_in=MapCompose(string_to_bool)
     benchmark_index_in=MapCompose(str.strip)
     isin_in = MapCompose(lambda x: x.replace(',', ''))
 
@@ -130,6 +153,7 @@ class EtfItem(Item):
     swiss_paying_agent = Field()
 
     # tax status
+    tax_germany = Field()
     tax_switzerland = Field()
     tax_austria = Field()
     tax_uk = Field()
@@ -179,6 +203,7 @@ class EtfItem(Item):
         j.swiss_representative = l2v(self, 'swiss_representative')
         j.swiss_paying_agent = l2v(self, 'swiss_paying_agent')
 
+        j.tax_germany = l2v(self, 'tax_germany')
         j.tax_switzerland = l2v(self, 'tax_switzerland')
         j.tax_austria = l2v(self, 'tax_austria')
         j.tax_uk = l2v(self, 'tax_uk')
@@ -190,14 +215,6 @@ class EtfItem(Item):
         j.securities_lending_counterparty = l2v(self, 'securities_lending_counterparty')
 
         return j
-
-
-class EtfCategoryItem(Item):
-    """
-    EtfCategoryItem represents the category and/or a subcategory of an ETF.
-    """
-    isin = Field()
-    category = Field()
 
 
 def l2v(item, key: str):

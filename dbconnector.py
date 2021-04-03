@@ -1,10 +1,13 @@
 
-from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
+import sys
+
+import click
 from scrapy.utils.project import get_project_settings
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey, Boolean
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+engine = None
 
 
 def db_connect():
@@ -12,7 +15,14 @@ def db_connect():
     Performs database connection using database settings from settings.py.
     Returns sqlalchemy engine instance
     """
-    return create_engine(get_project_settings().get("SQL_URI"))
+    global engine
+    if engine is None:
+        uri = get_project_settings().get("SQL_URI")
+        if not uri:
+            click.echo("Please setup the database connection first!")
+            sys.exit(1)
+        engine = create_engine(uri)
+    return engine
 
 
 def create_table(engine):
@@ -26,7 +36,7 @@ def drop_static_tables(engine):
     """
     Drops all tables with static data.
     """
-    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__, EtfCategory.__table__])
+    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__])
 
 
 class Etf(Base):
@@ -63,7 +73,7 @@ class Etf(Base):
 
     # legal structure
     fund_structure = Column(String)
-    ucits_compliance = Column(String)
+    ucits_compliance = Column(Boolean)
     fund_provider = Column(String)
     administrator = Column(String)
     investment_advisor = Column(String)
@@ -74,6 +84,7 @@ class Etf(Base):
     swiss_paying_agent = Column(String)
 
     # tax status
+    tax_germany = Column(String)
     tax_switzerland = Column(String)
     tax_austria = Column(String)
     tax_uk = Column(String)
@@ -82,10 +93,8 @@ class Etf(Base):
     indextype = Column(String)
     swap_counterparty = Column(String)
     collateral_manager = Column(String)
-    securities_lending = Column(String)
+    securities_lending = Column(Boolean)
     securities_lending_counterparty = Column(String)
-
-    categories = relationship('EtfCategory', secondary='isin_category')
 
 
 class IsinCategory(Base):
@@ -95,16 +104,4 @@ class IsinCategory(Base):
     __tablename__ = 'isin_category'
 
     etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True)
-    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
-
-
-class EtfCategory(Base):
-    """
-    Describes the columns of the categories table.
-    """
-    __tablename__ = 'category'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    category = Column(String)
-
-    etfs = relationship('Etf', secondary='isin_category')
+    category = Column(String, primary_key=True)

@@ -1,19 +1,25 @@
 #!/usr/bin/python3
-from scrapy.crawler import CrawlerProcess
-from scrapy.utils.project import get_project_settings
+import os
 from getpass import getpass
 
+import click
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+
 from dbconnector import drop_static_tables, db_connect
-from etf_categories import save_categories
+from extraetf import Extraetf
 from isin_extractor import extract_isins
-import os
+# todo db security?
 
 
 def prompt(ask):
-    return input(ask + " [y|n]\n").lower().strip()[0] == 'y'
-# todo avoid having so many engine
-# todo database security?
-# todo maybe some command line options?
+    return input(ask + " [y|n]\n>>> ").lower().strip()[0] == 'y'
+
+
+def run_crawler(name: str):
+    process = CrawlerProcess(get_project_settings())
+    process.crawl(name)
+    process.start()
 
 
 def update_line(key, value):
@@ -53,42 +59,86 @@ def change_db_uri():
 
     uri = f"SQL_URI = 'postgresql+psycopg2://{user}:{pw}@{host}:{port}/{db}'\n"
     update_line("SQL_URI", uri)
-    print("Successfully change database configuration!")
 
 
-if prompt("Change database configuration?"):
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
+def setupdb():
+    """Sets up the database connection."""
     change_db_uri()
+    click.echo("Successfully change database configuration!")
 
-print("Deleting the static (scraped) etf data is required if you want to run again the same crawler.")
-print("WARNING: If you do not apply this step and you run a particular crawler again you will see errors!")
-print("WARNING: This will permanently delete your data in several tables holding static etf data!")
-if prompt("Delete static etf data?"):
+@cli.command()
+def runi():
+    """Runs crawlers interactively. Please use this option if you are unsure!
+    This is the recommended way, as it ensures correct ordering of running the crawlers.f"""
+
+    uri = get_project_settings().get("SQL_URI")
+    if not uri:
+        click.echo("You have not configured a database connection.")
+        click.echo("Please ensure first you have correctly installed PostgreSQL\n" +
+                "1) Windows Launch SQL Shell (psql) from the application launcher and check with 'SELECT version();'"
+                "2) Linux: Run 'psql --version' from your CLI")
+        click.echo("Once you are done you will be prompted in the following with the parameters for your database connection.")
+        if prompt("Continue?"):
+            change_db_uri()
+        else:
+            click.echo('Aborted db setup. Exiting.')
+            return
+
+    click.echo("For rerunning crawler static ETF data must be deleted first.")
+    click.echo("Warning! This will permanently delete any static ETF data.")
+    if prompt("Delete static ETF data?"):
+        drop_static_data()
+
+    if prompt("Run justetf crawler?"):
+        crawl_justetf()
+
+    if prompt("Run extraetf crawler?"):
+        crawl_extraetf()
+
+    if prompt("Extract ISINs?"):
+        extract_isins()
+
+
+@cli.command()
+def drop_static_data():
+    """Deletes tables holding static ETF data."""
     drop_static_tables(db_connect())
-    print("Deleted static tables.")
+    click.echo('Successfully dropped tables.')
 
-if prompt("Run justetf crawler?"):
-    # 1. Crawl jusetetf.com
-    process = CrawlerProcess(get_project_settings())
-    process.crawl('justetf')
-    process.start()
 
-if prompt("Run extraetf crawler?"):
-    # 2. Crawl extraetf.com
-    process = CrawlerProcess(get_project_settings())
-    process.crawl('extraetf')
-    process.start()
+@cli.command()
+def crawl_extraetf():
+    """Runs the extraetf crawler."""
+    extraetf = Extraetf()
+    extraetf.collect_data()
 
-if prompt("Run extraetf categories crawler?"):
-    # 3. Save known categories from extraetf.com
-    save_categories()
+    click.echo('Finished crawling extraetf.com')
 
-    # 4. Crawl extraetf again, this time for categories of already crawled etfs.
-    process = CrawlerProcess(get_project_settings())
-    process.crawl('extraetf_categories')
-    process.start()
 
-if prompt("Write ISINs to a .csv?"):
-    # 5. Extract ISINs and write to .csv
-    res = input("ISIN Output file?")
-    out_file = None if not res.strip() else res.strip()
-    extract_isins(out_file)
+@cli.command()
+def crawl_justetf():
+    """Runs the justetf crawler."""
+    try:
+        run_crawler('justetf')
+        click.echo('Finished crawling the justetf.com website.')
+    except:
+        click.echo('Failed crawling the justetf.com website.')
+        raise
+
+
+@cli.command()
+@click.option('--outfile', '-o', default='isins.csv')
+def extract_isins(outfile):
+    """Runs the justetf crawler."""
+    extract_isins(outfile)
+
+
+if __name__ == '__main__':
+    cli()
+
