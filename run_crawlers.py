@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import os
+import sys
 from getpass import getpass
+import logging
 
 import click
 from scrapy.crawler import CrawlerProcess
@@ -140,5 +142,10 @@ def extract_isins(outfile):
 
 
 if __name__ == '__main__':
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    root.addHandler(handler)
     cli()
 

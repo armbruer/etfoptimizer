@@ -17,15 +17,14 @@ class Extraetf():
         self.session = self.Session()
 
     def collect_data(self):
-        offest = 0
-        params = {'offset': offest, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1, 'leverage_to': 1}
+        params = {'offset': 0, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1, 'leverage_to': 1}
         while True:
             response = requests.get('https://de.extraetf.com/api-v2/search/full/', params)
             time.sleep(2)
             data = response.json()
             results = data['results']
 
-            logging.info(f"Extracted etfs from page {offest % 200 + 1}!")
+            logging.info(f"Extracted etfs from page {params['offset'] % 200 + 1}!")
 
             for result in results:
                 detail_params = {'isin': result['isin']}
@@ -43,7 +42,7 @@ class Extraetf():
             if data['next'] is None:
                 break
 
-            offest += 200
+            params['offset'] += 200
 
         self.session.close()
 

@@ -59,7 +59,7 @@ def strip_float(x: str):
     return res
 
 
-date_formats = [('en_US', '%d %B %Y'), ('de_DE', '%d %B %Y'), ('en_US', '%d.%m.%Y'), ('de_DE', '%d.%m.%Y')]
+date_formats = [('en_US.utf8', '%d %B %Y'), ('de_DE.utf8', '%d %B %Y'), ('en_US.utf8', '%Y-%m-%d')]
 
 
 def string_to_date(x: str):
@@ -71,7 +71,7 @@ def string_to_date(x: str):
         lang, f = format
         try:
             locale.setlocale(locale.LC_ALL, lang)
-            res = datetime.strptime(x, '')
+            res = datetime.strptime(x, f)
             break
         except ValueError:
             pass  # continue conversion tries
