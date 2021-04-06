@@ -104,4 +104,15 @@ class IsinCategory(Base):
     __tablename__ = 'isin_category'
 
     etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True)
-    category = Column(String, primary_key=True)
+    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
+
+
+class EtfHistory(Base):
+    __tablename__ = 'etf_history'
+
+    isin = Column(String, primary_key=True)
+    datapoint_date = Column(Date, primary_key=True)
+
+    price = Column(Float)
+    price_index = Column(Float)
+    return_index = Column(Float)

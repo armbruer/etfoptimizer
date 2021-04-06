@@ -4,27 +4,16 @@ import os
 import pandas
 
 from datetime import date, datetime
+from dbconnector import db_connect, create_table, EtfHistory
 from sqlalchemy import Column, Date, Float, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-Base = declarative_base()
-
-
-class DynamicData(Base):
-    __tablename__ = 'dynamic data'
-
-    isin = Column(String, primary_key=True)
-    datapoint_date = Column(Date, primary_key=True)
-
-    price = Column(Float)
-    price_index = Column(Float)
-    return_index = Column(Float)
 
 
 def get_isin_dict():
     isin_dict = {}
 
-    with open(os.path.dirname(os.path.realpath(__file__)) + '\\isin_test.csv', 'r') as csv_file:
+    with open(os.path.dirname(os.path.join(os.path.realpath(__file__)), 'isin.csv'), 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         header = next(csv_reader)
 
@@ -37,7 +26,7 @@ def get_isin_dict():
 def get_dynamic_data(session):
     isin_dict = get_isin_dict()
     
-    dynamic_data = pandas.read_csv(os.path.dirname(os.path.realpath(__file__)) + '\\dynamic_data_test.csv', sep = ';')
+    dynamic_data = pandas.read_csv(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'etf_history.csv'), sep = ';')
     header = dynamic_data.columns.to_list()
 
     isin = ''
@@ -64,7 +53,7 @@ def get_dynamic_data(session):
                     if exists:
                         logging.warning(f'Updated values are not reflected in database.')
                     else:
-                        data = DynamicData()
+                        data = EtfHistory()
 
                         data.isin = isin
                         data.datapoint_date = date
@@ -77,13 +66,13 @@ def get_dynamic_data(session):
                         session.commit()
                 except:
                     logging.warning(f'Could not save data!')
-                    self.session.rollback()
+                    session.rollback()
                     raise
 
 
-def create_database():
-    engine = create_engine('postgresql+psycopg2://postgres:poIDPst42!gre@localhost:5432/ETFData')
-    Base.metadata.create_all(engine)
+def create_etf_history_database():
+    engine = db_connect()
+    create_table(engine)
 
     Session = sessionmaker(engine)
     session = Session()
@@ -93,4 +82,4 @@ def create_database():
     session.close()
 
 
-create_database()
+create_etf_history_database()
