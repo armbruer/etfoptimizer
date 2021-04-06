@@ -29,8 +29,6 @@ class EtfPipeline:
         self.session.close()
 
     def process_item(self, item, spider):
-        # TODO support updating
-
         etf = item.to_etfitemdb()
         logging.info(f"Preparing to save {etf.name} in database")
 

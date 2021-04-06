@@ -79,7 +79,7 @@ class Etf(Base):
     investment_advisor = Column(String)
     custodian_bank = Column(String)
     revision_company = Column(String)
-    fiscal_year_end = Column(String)
+    fiscal_year_end_month = Column(String)
     swiss_representative = Column(String)
     swiss_paying_agent = Column(String)
 

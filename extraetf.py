@@ -4,7 +4,7 @@ import time
 import requests
 from sqlalchemy.orm import sessionmaker
 
-from ETFOptimizer.items import EtfItem, string_to_date, strip_float
+from ETFOptimizer.items import EtfItem, string_to_date
 from dbconnector import create_table, db_connect, Etf, IsinCategory
 
 
@@ -58,24 +58,22 @@ class Extraetf():
         item['name'] = name
         item['isin'] = result['isin']
         item['wkn'] = result['wkn']
-
-        # main_data table
         item['ter'] = result['ter']
-        item['replication'] = result['replication_methodology_first_level']  # TODO
+        item['replication'] = detail_result['replication_methodology_first_level'] + \
+                              '(' + detail_result['replication_methodology_second_level'] + ')'
         item['distribution_policy'] = result['distribution_policy']
         item['fund_size'] = result['assets_under_management']
         item['inception'] = result['launch_date']
         item['fund_currency'] = result['fund_currency_id']
         item['fund_domicile'] = result['fund_domicile']
 
-        # TODO MISSING VALUES
-        item['fund_provider'] = None
+        item['fund_provider'] = detail_result['provider_name']
         item['legal_structure'] = result['legal_structure']
         item['fund_structure'] = detail_result['fund_structure']
         item['ucits_compliance'] = detail_result['ucits_konform']
         item['administrator'] = detail_result['administrator']
-        item['revision_company'] = None
-        item['custodian_bank'] = None
+        item['revision_company'] = detail_result['revision_company']
+        item['custodian_bank'] = detail_result['depotbank']
         item['tax_germany'] = detail_result['tax_status_de']
         item['tax_switzerland'] = detail_result['tax_status_ch']
         item['tax_austria'] = detail_result['tax_status_au']
@@ -83,19 +81,20 @@ class Extraetf():
         item['tax_data'] = None
         item['distribution_frequency'] = detail_result['distribution_interval']
 
+        # TODO search for missing values
         item['benchmark_index'] = None
         item['investment_advisor'] = None
         item['strategy_risk'] = None
-        item['volatility_one_year'] = None
+        item['volatility_one_year'] = detail_result['volatility_1_year']
         item['currency_risk'] = None
-        item['fiscal_year_end'] = None
+        item['fiscal_year_end_month'] = detail_result['fiscal_year_end_month']
         item['swiss_representative'] = None
         item['swiss_paying_agent'] = None
-        item['indextype'] = None
-        item['swap_counterparty'] = None
-        item['collateral_manager'] = None
-        item['securities_lending'] = None
-        item['securities_lending_counterparty'] = None
+        item['indextype'] = detail_result['index_type']
+        item['swap_counterparty'] = detail_result['swap_counterparty']
+        item['collateral_manager'] = detail_result['collateral_manager']
+        item['securities_lending'] = detail_result['has_securities_lending']
+        item['securities_lending_counterparty'] = detail_result['securities_lending_party']
 
         return item
 
@@ -135,7 +134,7 @@ class Extraetf():
                     ic.etf_isin = isin
                     self.session.add(ic)
             self.session.commit()
-        except: # todo better exception handling?
+        except:  # todo better exception handling?
             logging.warning(f"Could not save data for {result['isin']}!")
             self.session.rollback()
             raise

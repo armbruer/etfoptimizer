@@ -29,10 +29,7 @@ def strip_int(x: str):
     """
     Returns the first integer in a string.
     """
-    # TODO there might be problematic numbers with a format like < 1 Million
-    # todo should this number be in millions or what?
     t = x.replace(',', '')  # to handle numbers like 7,000
-    t = t.replace('.', '')  # same problem, but in German: 7.000
 
     for s in t.split():
         if s.isdigit():
@@ -97,7 +94,7 @@ class EtfItemLoader(ItemLoader):
     volatility_one_year_in = MapCompose(strip_float)
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
-    fiscal_year_end_in=MapCompose(empty_to_none)
+    fiscal_year_end_month_in=MapCompose(empty_to_none, lambda x: x.split(' ')[1] if len(x.split(' ')) > 1 else x)
     ucits_compliance_in=MapCompose(string_to_bool)
     securities_lending_in=MapCompose(string_to_bool)
     benchmark_index_in=MapCompose(str.strip)
@@ -148,7 +145,7 @@ class EtfItem(Item):
     investment_advisor = Field()
     custodian_bank = Field()
     revision_company = Field()
-    fiscal_year_end = Field()
+    fiscal_year_end_month = Field()
     swiss_representative = Field()
     swiss_paying_agent = Field()
 
@@ -199,7 +196,7 @@ class EtfItem(Item):
         j.investment_advisor = l2v(self, 'investment_advisor')
         j.custodian_bank = l2v(self, 'custodian_bank')
         j.revision_company = l2v(self, 'revision_company')
-        j.fiscal_year_end = l2v(self, 'fiscal_year_end')
+        j.fiscal_year_end_month = l2v(self, 'fiscal_year_end_month')
         j.swiss_representative = l2v(self, 'swiss_representative')
         j.swiss_paying_agent = l2v(self, 'swiss_paying_agent')
 
