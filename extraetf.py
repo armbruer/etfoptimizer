@@ -5,7 +5,7 @@ import requests
 from sqlalchemy.orm import sessionmaker
 
 from ETFOptimizer.items import EtfItem, string_to_date
-from dbconnector import create_table, db_connect, Etf, IsinCategory
+from dbconnector import create_table, db_connect, Etf, IsinCategory, EtfCategory
 
 
 class Extraetf():
@@ -13,8 +13,13 @@ class Extraetf():
     def __init__(self):
         engine = db_connect()
         create_table(engine)
+        self.category_to_type = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
+                       'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie', 'fund_currency_id': 'Währung',
+                       'bond_type_name': 'Anlageart', 'commodity_class_name': 'Rohstoffklasse', 'bond_maturity_name': 'Laufzeit',
+                       'bond_rating_name': 'Rating'}
         self.Session = sessionmaker(bind=engine)
         self.session = self.Session()
+        self.cgry_cache = dict()
 
     def collect_data(self):
         params = {'offset': 0, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1, 'leverage_to': 1}
@@ -35,7 +40,7 @@ class Extraetf():
                 item = self.process_item(item)
                 self.save_item(item)
 
-                self.save_item_categories(result)
+                self.save_item_categories(result, detail_result)
 
                 time.sleep(0.25)  # slow down to avoid getting banned :)
 
@@ -78,23 +83,32 @@ class Extraetf():
         item['tax_switzerland'] = detail_result['tax_status_ch']
         item['tax_austria'] = detail_result['tax_status_au']
         item['tax_uk'] = detail_result['tax_status_uk']
-        item['tax_data'] = None
         item['distribution_frequency'] = detail_result['distribution_interval']
 
-        # TODO search for missing values
-        item['benchmark_index'] = None
-        item['investment_advisor'] = None
-        item['strategy_risk'] = None
         item['volatility_one_year'] = detail_result['volatility_1_year']
-        item['currency_risk'] = None
         item['fiscal_year_end_month'] = detail_result['fiscal_year_end_month']
-        item['swiss_representative'] = None
-        item['swiss_paying_agent'] = None
         item['indextype'] = detail_result['index_type']
         item['swap_counterparty'] = detail_result['swap_counterparty']
         item['collateral_manager'] = detail_result['collateral_manager']
         item['securities_lending'] = detail_result['has_securities_lending']
         item['securities_lending_counterparty'] = detail_result['securities_lending_party']
+
+        item['net_assets_currency'] = detail_result['net_assets_currency']
+        item['is_accumulating'] = detail_result['is_accumulating']
+        item['is_derivative_based'] = detail_result['is_derivative_based']
+        item['is_distributing'] = detail_result['is_distributing']
+        item['is_etc'] = detail_result['is_etc']
+        item['is_etf'] = detail_result['is_etf']
+        item['is_hedged'] = detail_result['is_hedged']
+        item['hedged_currency'] = detail_result['is_hedged_currency']
+        item['is_index_fund'] = detail_result['is_index_fund']
+        item['is_leveraged'] = detail_result['is_leveraged']
+        item['is_physical_full'] = detail_result['is_physical_full']
+        item['is_short'] = detail_result['is_short']
+        item['is_socially_responsible_fund'] = detail_result['is_socially_responsible_fund']
+        item['is_structured'] = detail_result['is_structured']
+        item['is_swap_based_etf'] = detail_result['is_swap_based_etf']
+        item['is_synthetic_replication'] = detail_result['is_synthetic_replication']
 
         return item
 
@@ -122,18 +136,36 @@ class Extraetf():
             self.session.rollback()
             raise
 
-    def save_item_categories(self, result):
+    def save_item_categories(self, result, detail_result):
         isin = result['isin']
-        categories = [result['sector_name'], result['land_name'], result['region_name'], result['asset_class_name']]
+        categories = [detail_result[category] for category in self.category_to_type.keys()] # todo check
 
         try:
             for category in categories:
                 if category is not None and category:
-                    ic = IsinCategory()
-                    ic.category = category
-                    ic.etf_isin = isin
-                    self.session.add(ic)
-            self.session.commit()
+                    cat_id = None
+                    if category in self.cgry_cache:
+                        cat_id = self.cgry_cache[category]
+                    else:
+                        etf_category = EtfCategory()
+                        etf_category.name = category
+                        etf_category.type = self.category_to_type[category]
+                        self.session.add(etf_category)
+                        self.session.commit()
+                        self.session.refresh(etf_category)  # refresh to get auto-incremented cat_id
+
+                        cat_id = etf_category.id
+                        self.cgry_cache[category] = cat_id
+
+                    if cat_id:
+                        ic = IsinCategory()
+                        ic.etf_isin = isin
+                        ic.category_id = cat_id
+                        self.session.add(ic)
+                    else:
+                        logging.error(f"No ID was found for item with category {category}")
+
+            self.session.commit()  # only commit once after all categories of one item have been handled
         except:  # todo better exception handling?
             logging.warning(f"Could not save data for {result['isin']}!")
             self.session.rollback()

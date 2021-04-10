@@ -3,8 +3,9 @@ import sys
 
 import click
 from scrapy.utils.project import get_project_settings
-from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey, Boolean, Table
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 engine = None
@@ -36,7 +37,7 @@ def drop_static_tables(engine):
     """
     Drops all tables with static data.
     """
-    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__])
+    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__, EtfCategory.__table__])
 
 
 class Etf(Base):
@@ -96,23 +97,40 @@ class Etf(Base):
     securities_lending = Column(Boolean)
     securities_lending_counterparty = Column(String)
 
+    net_assets_currency = Column(String)
+    is_accumulating = Column(String)
+    is_distributing = Column(String)
+    is_etc = Column(String)
+    is_etf = Column(String)
+    is_hedged = Column(String)
+    hedged_currency = Column(String)
+    is_index_fund = Column(String)
+    is_leveraged = Column(String)
+    is_physical_full = Column(String)
+    is_short = Column(String)
+    is_socially_responsible_fund = Column(String)
+    is_structured = Column(String)
+    is_swap_based_etf = Column(String)
+    is_synthetic_replication = Column(String)
+
+    categories = relationship("EtfCategory", secondary='isin_category')
+
+
+class EtfCategory(Base):
+    """
+    Describes ETF categories.
+    """
+    __tablename__ = 'category'
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    name = Column(String)
+    type = Column(String)
+
+    isins = relationship("Etf", secondary='isin_category')
+
 
 class IsinCategory(Base):
-    """
-    Describes the columns of the table matching ISINs with categories.
-    """
     __tablename__ = 'isin_category'
 
-    etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True)
-    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
-
-
-class EtfHistory(Base):
-    __tablename__ = 'etf_history'
-
-    isin = Column(String, primary_key=True)
-    datapoint_date = Column(Date, primary_key=True)
-
-    price = Column(Float)
-    price_index = Column(Float)
-    return_index = Column(Float)
+    etf_isin = Column('etf_isin', String, ForeignKey('etf.isin'), primary_key=True),
+    category_id = Column('category_id', Integer, ForeignKey('category.id'), primary_key=True)
