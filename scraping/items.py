@@ -8,8 +8,9 @@ from datetime import datetime
 from itemloaders.processors import MapCompose, TakeFirst
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
-from dbconnector import Etf
 import locale
+
+from db.models import Etf
 
 
 def string_to_bool(x: str):
@@ -162,10 +163,27 @@ class EtfItem(Item):
     securities_lending = Field()
     securities_lending_counterparty = Field()
 
+    net_assets_currency = Field()
+    is_accumulating = Field()
+    is_derivative_based = Field()
+    is_distributing = Field()
+    is_etc = Field()
+    is_etf = Field()
+    is_hedged = Field()
+    hedged_currency = Field()
+    is_index_fund = Field()
+    is_leveraged = Field()
+    is_physical_full = Field()
+    is_short = Field()
+    is_socially_responsible_fund = Field()
+    is_structured = Field()
+    is_swap_based_etf = Field()
+    is_synthetic_replication = Field()
+
     def to_etfitemdb(self) -> Etf:
         """Converts an EtfItem into a JustetfItem.
         The purpose is to convert from a scrapy representation to an sqlalchemy representation of the same item,
-        so the item can be stored in a database"""
+        so the item can be stored in a db"""
 
         j = Etf()
         j.name = l2v(self, 'name')
@@ -210,6 +228,23 @@ class EtfItem(Item):
         j.collateral_manager = l2v(self, 'collateral_manager')
         j.securities_lending = l2v(self, 'securities_lending')
         j.securities_lending_counterparty = l2v(self, 'securities_lending_counterparty')
+
+        j.net_assets_currency = l2v(self, 'net_assets_currency')
+        j.is_accumulating = l2v(self, 'is_accumulating')
+        j.is_derivative_based = l2v(self, 'is_derivative_based')
+        j.is_distributing = l2v(self, 'is_distributing')
+        j.is_etc = l2v(self, 'is_etc')
+        j.is_etf = l2v(self, 'is_etf')
+        j.is_hedged = l2v(self, 'is_hedged')
+        j.hedged_currency = l2v(self, 'hedged_currency')
+        j.is_index_fund = l2v(self, 'is_index_fund')
+        j.is_leveraged = l2v(self, 'is_leveraged')
+        j.is_physical_full = l2v(self, 'is_physical_full')
+        j.is_short = l2v(self, 'is_short')
+        j.is_socially_responsible_fund = l2v(self, 'is_socially_responsible_fund')
+        j.is_structured = l2v(self, 'is_structured')
+        j.is_swap_based_etf = l2v(self, 'is_swap_based_etf')
+        j.is_synthetic_replication = l2v(self, 'is_synthetic_replication')
 
         return j
 

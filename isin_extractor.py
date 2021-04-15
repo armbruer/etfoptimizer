@@ -1,18 +1,20 @@
 from sqlalchemy.orm import sessionmaker
-from dbconnector import db_connect, Etf
+from db.dbconnector import db_connect
 import csv
 import logging
 
+from db.models import Etf
 
-def extract_isins(out_file="isins.csv"):
+
+def extract_isins_from_db(out_file="isins.csv"):
     pre = "[ISIN Extractor]: "
     engine = db_connect()
-    logging.info(pre + "Connected to database.")
+    logging.info(pre + "Connected to db.")
     Session = sessionmaker(bind=engine)
     session = Session()
 
     isins = [etf.isin for etf in session.query(Etf)]
-    logging.info(pre + "Retrieved ISINs from database.")
+    logging.info(pre + "Retrieved ISINs from db.")
     session.close()
 
     with open(out_file, 'w', newline='') as isin_file:

@@ -7,7 +7,7 @@ from scrapy.selector import Selector
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 
-from ETFOptimizer.items import EtfItem, EtfItemLoader
+from scraping.items import EtfItem, EtfItemLoader
 
 
 class JustetfSpider(scrapy.Spider):
@@ -16,7 +16,7 @@ class JustetfSpider(scrapy.Spider):
     start_urls = ['https://justetf.com/de/find-etf.html']
     custom_settings = {
         'ITEM_PIPELINES': {
-            'ETFOptimizer.pipelines.EtfPipeline': 300
+            'scraping.pipelines.EtfPipeline': 300
         },
         'LOG_LEVEL': 'INFO'
     }

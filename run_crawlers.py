@@ -8,9 +8,9 @@ import click
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from dbconnector import drop_static_tables, db_connect
+from db.dbconnector import drop_static_tables, db_connect
 from extraetf import Extraetf
-from isin_extractor import extract_isins
+from isin_extractor import extract_isins_from_db
 # todo db security?
 
 
@@ -25,7 +25,7 @@ def run_crawler(name: str):
 
 
 def update_line(key, value):
-    file = os.path.join("ETFOptimizer", "settings.py")
+    file = os.path.join("scraping", "settings.py")
     with open(file, 'r') as read_settings:
         lines = read_settings.readlines()
         for i, line in enumerate(lines):
@@ -70,9 +70,9 @@ def cli():
 
 @cli.command()
 def setupdb():
-    """Sets up the database connection."""
+    """Sets up the db connection."""
     change_db_uri()
-    click.echo("Successfully change database configuration!")
+    click.echo("Successfully change db configuration!")
 
 @cli.command()
 def runi():
@@ -81,11 +81,11 @@ def runi():
 
     uri = get_project_settings().get("SQL_URI")
     if not uri:
-        click.echo("You have not configured a database connection.")
+        click.echo("You have not configured a db connection.")
         click.echo("Please ensure first you have correctly installed PostgreSQL\n" +
                 "1) Windows Launch SQL Shell (psql) from the application launcher and check with 'SELECT version();'"
                 "2) Linux: Run 'psql --version' from your CLI")
-        click.echo("Once you are done you will be prompted in the following with the parameters for your database connection.")
+        click.echo("Once you are done you will be prompted in the following with the parameters for your db connection.")
         if prompt("Continue?"):
             change_db_uri()
         else:
@@ -104,7 +104,7 @@ def runi():
         crawl_extraetf()
 
     if prompt("Extract ISINs?"):
-        extract_isins()
+        extract_isins_from_db('isins.csv')
 
 
 @cli.command()
@@ -138,7 +138,7 @@ def crawl_justetf():
 @click.option('--outfile', '-o', default='isins.csv')
 def extract_isins(outfile):
     """Runs the justetf crawler."""
-    extract_isins(outfile)
+    extract_isins_from_db(outfile)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-# Scrapy settings for ETFOptimizer project
+# Scrapy settings for scraping project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -7,14 +7,14 @@
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'ETFOptimizer'
+BOT_NAME = 'scraping'
 
-SPIDER_MODULES = ['ETFOptimizer.spiders']
-NEWSPIDER_MODULE = 'ETFOptimizer.spiders'
+SPIDER_MODULES = ['scraping.spiders']
+NEWSPIDER_MODULE = 'scraping.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'ETFOptimizer (+http://www.yourdomain.com)'
+#USER_AGENT = 'scraping (+http://www.yourdomain.com)'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -49,13 +49,13 @@ SQL_URI = 'postgresql+psycopg2://postgres:Y4w3T48qWSYqQGWRakoh@localhost:5432/et
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 #SPIDER_MIDDLEWARES = {
-#    'ETFOptimizer.middlewares.EtfoptimizerSpiderMiddleware': 543,
+#    'scraping.middlewares.EtfoptimizerSpiderMiddleware': 543,
 #}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #DOWNLOADER_MIDDLEWARES = {
-#    'ETFOptimizer.middlewares.EtfoptimizerDownloaderMiddleware': 543,
+#    'scraping.middlewares.EtfoptimizerDownloaderMiddleware': 543,
 #}
 
 # Enable or disable extensions

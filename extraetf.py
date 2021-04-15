@@ -4,8 +4,9 @@ import time
 import requests
 from sqlalchemy.orm import sessionmaker
 
-from ETFOptimizer.items import EtfItem, string_to_date
-from dbconnector import create_table, db_connect, Etf, IsinCategory, EtfCategory
+from db.models import EtfCategory, IsinCategory
+from scraping.items import EtfItem, string_to_date
+from db.dbconnector import create_table, db_connect
 
 
 class Extraetf():
@@ -13,7 +14,7 @@ class Extraetf():
     def __init__(self):
         engine = db_connect()
         create_table(engine)
-        self.category_to_type = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
+        self.category_types = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
                        'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie', 'fund_currency_id': 'Währung',
                        'bond_type_name': 'Anlageart', 'commodity_class_name': 'Rohstoffklasse', 'bond_maturity_name': 'Laufzeit',
                        'bond_rating_name': 'Rating'}
@@ -46,7 +47,7 @@ class Extraetf():
 
             if data['next'] is None:
                 break
-
+            break  # TODO REMOVE, only for debugging
             params['offset'] += 200
 
         self.session.close()
@@ -64,8 +65,13 @@ class Extraetf():
         item['isin'] = result['isin']
         item['wkn'] = result['wkn']
         item['ter'] = result['ter']
-        item['replication'] = detail_result['replication_methodology_first_level'] + \
-                              '(' + detail_result['replication_methodology_second_level'] + ')'
+
+        replication = detail_result['replication_methodology_first_level']
+        repl_detail = detail_result['replication_methodology_second_level']
+        if repl_detail is not None:
+            replication = repl_detail if replication is None else '(' + repl_detail + ')'
+
+        item['replication'] = replication
         item['distribution_policy'] = result['distribution_policy']
         item['fund_size'] = result['assets_under_management']
         item['inception'] = result['launch_date']
@@ -77,7 +83,7 @@ class Extraetf():
         item['fund_structure'] = detail_result['fund_structure']
         item['ucits_compliance'] = detail_result['ucits_konform']
         item['administrator'] = detail_result['administrator']
-        item['revision_company'] = detail_result['revision_company']
+        item['revision_company'] = detail_result['auditor_company']
         item['custodian_bank'] = detail_result['depotbank']
         item['tax_germany'] = detail_result['tax_status_de']
         item['tax_switzerland'] = detail_result['tax_status_ch']
@@ -138,24 +144,24 @@ class Extraetf():
 
     def save_item_categories(self, result, detail_result):
         isin = result['isin']
-        categories = [detail_result[category] for category in self.category_to_type.keys()] # todo check
+        categories = [(detail_result[cat_key], cat_type) for cat_key, cat_type in self.category_types.items()]
 
         try:
-            for category in categories:
-                if category is not None and category:
+            for cat_name, cat_type in categories:
+                if cat_name is not None and cat_name:
                     cat_id = None
-                    if category in self.cgry_cache:
-                        cat_id = self.cgry_cache[category]
+                    if cat_name in self.cgry_cache:
+                        cat_id = self.cgry_cache[cat_name]
                     else:
                         etf_category = EtfCategory()
-                        etf_category.name = category
-                        etf_category.type = self.category_to_type[category]
+                        etf_category.name = cat_name
+                        etf_category.type = cat_type
                         self.session.add(etf_category)
                         self.session.commit()
                         self.session.refresh(etf_category)  # refresh to get auto-incremented cat_id
 
                         cat_id = etf_category.id
-                        self.cgry_cache[category] = cat_id
+                        self.cgry_cache[cat_name] = cat_id
 
                     if cat_id:
                         ic = IsinCategory()
@@ -163,7 +169,7 @@ class Extraetf():
                         ic.category_id = cat_id
                         self.session.add(ic)
                     else:
-                        logging.error(f"No ID was found for item with category {category}")
+                        logging.error(f"No ID was found for item with category {cat_name}")
 
             self.session.commit()  # only commit once after all categories of one item have been handled
         except:  # todo better exception handling?

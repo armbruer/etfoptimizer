@@ -11,8 +11,9 @@ from scrapy.exceptions import DropItem
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
-from ETFOptimizer.items import l2v
-from dbconnector import db_connect, create_table, Etf, IsinCategory
+from scraping.items import l2v
+from db.dbconnector import db_connect, create_table
+from db.models import Etf, EtfCategory, IsinCategory
 
 
 class EtfPipeline:
@@ -72,7 +73,7 @@ class EtfCategoryPipeline:
             category_row = self.session.query(EtfCategory).filter_by(category=category).first()
             if category_row is not None:
                 try:
-                    isin_category = IsinCategory(isin=isin, category_id=category_row.id)
+                    isin_category = IsinCategory(etf_isin=isin, category_id=category_row.id)
                     self.session.add(isin_category)
                     self.session.commit()
                     return item

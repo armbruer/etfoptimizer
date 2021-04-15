@@ -4,8 +4,10 @@ import os
 import pandas
 
 from datetime import datetime
-from dbconnector import db_connect, create_table, EtfHistory
+from db.dbconnector import db_connect, create_table
 from sqlalchemy.orm import sessionmaker
+
+from db.models import EtfHistory
 
 
 def get_isin_dict():  # todo file parameter

@@ -1,43 +1,7 @@
-
-import sys
-
-import click
-from scrapy.utils.project import get_project_settings
-from sqlalchemy import Column, Integer, String, Date, Float, create_engine, ForeignKey, Boolean, Table
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import String, Date, Integer, Float, Boolean, ForeignKey, Column
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
-engine = None
-
-
-def db_connect():
-    """
-    Performs database connection using database settings from settings.py.
-    Returns sqlalchemy engine instance
-    """
-    global engine
-    if engine is None:
-        uri = get_project_settings().get("SQL_URI")
-        if not uri:
-            click.echo("Please setup the database connection first!")
-            sys.exit(1)
-        engine = create_engine(uri)
-    return engine
-
-
-def create_table(engine):
-    """
-    Creates the tables if they do not exist.
-    """
-    Base.metadata.create_all(engine)
-
-
-def drop_static_tables(engine):
-    """
-    Drops all tables with static data.
-    """
-    Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__, EtfCategory.__table__])
+from db.dbconnector import Base
 
 
 class Etf(Base):
@@ -98,20 +62,20 @@ class Etf(Base):
     securities_lending_counterparty = Column(String)
 
     net_assets_currency = Column(String)
-    is_accumulating = Column(String)
-    is_distributing = Column(String)
-    is_etc = Column(String)
-    is_etf = Column(String)
-    is_hedged = Column(String)
+    is_accumulating = Column(Boolean)
+    is_distributing = Column(Boolean)
+    is_etc = Column(Boolean)
+    is_etf = Column(Boolean)
+    is_hedged = Column(Boolean)
     hedged_currency = Column(String)
-    is_index_fund = Column(String)
-    is_leveraged = Column(String)
-    is_physical_full = Column(String)
-    is_short = Column(String)
-    is_socially_responsible_fund = Column(String)
-    is_structured = Column(String)
-    is_swap_based_etf = Column(String)
-    is_synthetic_replication = Column(String)
+    is_index_fund = Column(Boolean)
+    is_leveraged = Column(Boolean)
+    is_physical_full = Column(Boolean)
+    is_short = Column(Boolean)
+    is_socially_responsible_fund = Column(Boolean)
+    is_structured = Column(Boolean)
+    is_swap_based_etf = Column(Boolean)
+    is_synthetic_replication = Column(Boolean)
 
     categories = relationship("EtfCategory", secondary='isin_category')
 
@@ -145,4 +109,3 @@ class EtfHistory(Base):
     price = Column(Float)
     price_index = Column(Float)
     return_index = Column(Float)
-
