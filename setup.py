@@ -13,6 +13,8 @@ setup(
         'SQLAlchemy',
         'pandas',
         'requests'
+        'dash'
+        'dash-bootstrap-components'
     ],
     entry_points='''
         [console_scripts]

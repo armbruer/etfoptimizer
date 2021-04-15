@@ -132,5 +132,5 @@ class EtfCategory(Base):
 class IsinCategory(Base):
     __tablename__ = 'isin_category'
 
-    etf_isin = Column('etf_isin', String, ForeignKey('etf.isin'), primary_key=True),
-    category_id = Column('category_id', Integer, ForeignKey('category.id'), primary_key=True)
+    etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True),
+    category_id = Column(Integer, ForeignKey('category.id'), primary_key=True)
