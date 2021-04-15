@@ -3,17 +3,15 @@ import logging
 import os
 import pandas
 
-from datetime import date, datetime
+from datetime import datetime
 from dbconnector import db_connect, create_table, EtfHistory
-from sqlalchemy import Column, Date, Float, String, create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 
-def get_isin_dict():
+def get_isin_dict():  # todo file parameter
     isin_dict = {}
 
-    with open(os.path.dirname(os.path.join(os.path.realpath(__file__)), 'isin.csv'), 'r') as csv_file:
+    with open(os.path.dirname(os.path.join(os.path.realpath(__file__), 'isin.csv')), 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=';')
         header = next(csv_reader)
 
@@ -23,9 +21,9 @@ def get_isin_dict():
     return isin_dict
 
 
-def get_dynamic_data(session):
+def get_dynamic_data(session):  # todo file parameter
     isin_dict = get_isin_dict()
-    
+
     dynamic_data = pandas.read_csv(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'etf_history.csv'), sep = ';')
     header = dynamic_data.columns.to_list()
 
@@ -48,8 +46,8 @@ def get_dynamic_data(session):
                 return_index = float(dynamic_data.iloc[i, j])
 
                 try:
-                    database_data = self.session.query(DynamicData)
-                    exists = database_data.filter_by(isin=data.isin, datapoint_date=data.datapoint_date).first() is not None
+                    database_data = session.query(EtfHistory)
+                    exists = database_data.filter_by(isin=data.isin, datapoint_date=data.datapoint_date).first() is not None  # todo pls fix
                     if exists:
                         logging.warning(f'Updated values are not reflected in database.')
                     else:
@@ -82,4 +80,4 @@ def create_etf_history_database():
     session.close()
 
 
-create_etf_history_database()
+create_etf_history_database()  # todo remove add commands to run_crawlers.py
