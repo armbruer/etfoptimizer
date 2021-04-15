@@ -4,7 +4,7 @@ import time
 import requests
 from sqlalchemy.orm import sessionmaker
 
-from db.models import EtfCategory, IsinCategory
+from db.models import EtfCategory, IsinCategory, Etf
 from scraping.items import EtfItem, string_to_date
 from db.dbconnector import create_table, db_connect
 
