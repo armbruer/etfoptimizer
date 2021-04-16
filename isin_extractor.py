@@ -3,7 +3,7 @@ from db.dbconnector import db_connect
 import csv
 import logging
 
-from db.models import Etf
+from db.dbmodels import Etf
 
 
 def extract_isins_from_db(out_file="isins.csv"):

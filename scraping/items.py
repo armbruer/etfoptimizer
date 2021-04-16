@@ -10,7 +10,7 @@ from scrapy import Field, Item
 from scrapy.loader import ItemLoader
 import locale
 
-from db.models import Etf
+from db.dbmodels import Etf
 
 
 def string_to_bool(x: str):

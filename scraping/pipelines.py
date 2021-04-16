@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 from scraping.items import l2v
 from db.dbconnector import db_connect, create_table
-from db.models import Etf, EtfCategory, IsinCategory
+from db.dbmodels import Etf, EtfCategory, IsinCategory
 
 
 class EtfPipeline:

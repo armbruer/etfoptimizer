@@ -5,8 +5,9 @@ import pandas
 
 from datetime import datetime
 from db.dbconnector import create_table, db_connect
-from db.models import EtfHistory
 from sqlalchemy.orm import sessionmaker
+
+from db.dbmodels import EtfHistory
 
 
 def get_isin_dict():  # todo file parameter
