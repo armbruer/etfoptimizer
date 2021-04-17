@@ -40,5 +40,3 @@ def drop_static_tables(engine):
     """
     from db.dbmodels import Etf, EtfCategory, IsinCategory
     Base.metadata.drop_all(bind=engine, tables=[Etf.__table__, IsinCategory.__table__, EtfCategory.__table__])
-
-

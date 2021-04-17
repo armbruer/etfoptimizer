@@ -1,15 +1,13 @@
-                      |
- Dropdown  Dropdown   |
-         ...          |
-                      |
-            Optimize  |
-----------------------
+                            |
+Dropdown     Dropdown       |
+...                         |
+                            |
+Optimize                    |
+----------------------------
 
-       Visualierungen
-        Table
+Table
 
-
-       5 Jahres blabla
+5 Jahres blabla
 
 Bootstrap Themes
 https://dash-bootstrap-components.opensource.faculty.ai/docs/themes/

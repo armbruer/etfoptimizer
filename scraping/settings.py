@@ -22,7 +22,6 @@ LOG_LEVEL = 'INFO'
 
 # Database
 SQL_URI = 'postgresql+psycopg2://postgres:Y4w3T48qWSYqQGWRakoh@localhost:5432/etf_optimization'
-#SQL_URI = 'postgresql+psycopg2://postgres:poIDPst42!gre@localhost:5432/etf_optimization'
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
