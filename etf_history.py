@@ -2,6 +2,7 @@ import csv
 import logging
 import os
 import pandas
+import sys
 
 from datetime import datetime
 from db.dbconnector import create_table, db_connect
@@ -10,23 +11,31 @@ from sqlalchemy.orm import sessionmaker
 from db.dbmodels import EtfHistory
 
 
-def get_isin_dict():  # todo file parameter
+def get_isin_dict(path):
     isin_dict = {}
 
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'isin.csv'), 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=';')
+    try:
+        with open(os.path.join(path, 'isin.csv'), 'r') as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=';')
 
-        for row in csv_reader:
-            isin_dict[row[1]] = row[0]
+            for row in csv_reader:
+                isin_dict[row[1]] = row[0]
+    except:
+        print("File isin.csv was not found at the given location.\n")
+        sys.exit(1)
 
     return isin_dict
 
 
-def get_etf_history(session):  # todo file parameter
-    isin_dict = get_isin_dict()
+def get_etf_history(path, session):
+    isin_dict = get_isin_dict(path)
 
-    etf_history = pandas.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'etf_history.csv'), sep = ';')
-    header = etf_history.columns.to_list()
+    try:
+        etf_history = pandas.read_csv(os.path.join(path, 'etf_history.csv'), sep = ';')
+        header = etf_history.columns.to_list()
+    except:
+        print("File etf_history.csv was not found at the given location.\n")
+        sys.exit(1)
 
     isin = ''
 
@@ -69,16 +78,13 @@ def get_etf_history(session):  # todo file parameter
                     raise
 
 
-def create_database():
+def save_history(path):
     engine = db_connect()
     create_table(engine)
 
     Session = sessionmaker(engine)
     session = Session()
 
-    get_etf_history(session)
+    get_etf_history(path, session)
 
     session.close()
-
-
-create_database() # Add to run_crawlers.py

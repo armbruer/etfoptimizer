@@ -1,21 +1,27 @@
 #!/usr/bin/python3
+import logging
 import os
 import sys
 from getpass import getpass
-import logging
 
 import click
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from db.dbconnector import drop_static_tables, db_connect
+from db.dbconnector import db_connect, drop_static_tables
 from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
+
+from etf_history import save_history
 # todo db security?
 
 
 def prompt(ask):
     return input(ask + " [y|n]\n>>> ").lower().strip()[0] == 'y'
+
+
+def path_prompt(ask):
+    return input(ask + "\n>>> ")
 
 
 def run_crawler(name: str):
@@ -105,6 +111,10 @@ def runi():
 
     if prompt("Extract ISINs?"):
         extract_isins_from_db('isins.csv')
+
+    if prompt("Save ETF history?"):
+        path = path_prompt("Please specify the path to the csv files.")
+        save_history(path)
 
 
 @cli.command()
