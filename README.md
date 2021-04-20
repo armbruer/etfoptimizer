@@ -67,4 +67,10 @@ prone to change over long times. Deleting does not hurt, if you run this for the
 Please answer each question with `y` in order to download all static data. This might take up to 15 minutes.
 
 TODO second step Ruben
-    
+
+Packaging Instructions
+======================
+
+1. Activate your virtual environment `source ./venv/bin/activate`.
+2. Package the project `python setup.py bdist_wheel`.
+3. Upload to TDB.
