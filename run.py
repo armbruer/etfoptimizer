@@ -16,6 +16,14 @@ from etf_history import save_history
 # todo db security?
 
 
+def set_log_level(level):
+    root = logging.getLogger()
+    root.setLevel(level)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(level)
+    root.addHandler(handler)
+
+
 def prompt(ask):
     return input(ask + " [y|n]\n>>> ").lower().strip()[0] == 'y'
 
@@ -81,9 +89,9 @@ def setupdb():
     click.echo("Successfully change db configuration!")
 
 @cli.command()
-def runi():
-    """Runs crawlers interactively. Please use this option if you are unsure!
-    This is the recommended way, as it ensures correct ordering of running the crawlers.f"""
+def setupi():
+    """Runs the project setup interactively. Please use this option if you are unsure!
+    This is the recommended way, as it ensures correct ordering of running the crawlers."""
 
     uri = get_project_settings().get("SQL_URI")
     if not uri:
@@ -147,15 +155,11 @@ def crawl_justetf():
 @cli.command()
 @click.option('--outfile', '-o', default='isins.csv')
 def extract_isins(outfile):
-    """Runs the justetf crawler."""
+    """Extracts all ISINS from db to a csv file."""
     extract_isins_from_db(outfile)
 
 
 if __name__ == '__main__':
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
-    root.addHandler(handler)
+    set_log_level(logging.INFO)
     cli()
 
