@@ -63,6 +63,7 @@ class Etf(Base):
 
     net_assets_currency = Column(String)
     is_accumulating = Column(Boolean)
+    is_derivative_based = Column(Boolean)
     is_distributing = Column(Boolean)
     is_etc = Column(Boolean)
     is_etf = Column(Boolean)

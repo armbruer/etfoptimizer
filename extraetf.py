@@ -47,8 +47,6 @@ class Extraetf():
 
             if data['next'] is None:
                 break
-            break  # TODO REMOVE, only for debugging
-            params['offset'] += 200
 
         self.session.close()
 
@@ -126,11 +124,32 @@ class Extraetf():
     def save_item(self, item: EtfItem):
         etf = item.to_etfitemdb()
         try:
-            current_data = self.session.query(Etf).filter_by(isin=etf.isin).first()
+            current_data: Etf = self.session.query(Etf).filter_by(isin=etf.isin).first()
             if current_data is not None:
+                # we only update attributes that do not exist at justetf.com or are of higher precision at extraetf.com
+
+                # higher precision
                 current_data.fund_size = etf.fund_size
                 current_data.ter = etf.ter
+
+                # new
                 current_data.tax_germany = etf.tax_germany
+                current_data.net_assets_currency = etf.net_assets_currency
+                current_data.is_accumulating = etf.is_accumulating
+                current_data.is_derivative_based = etf.is_derivative_based
+                current_data.is_distributing = etf.is_distributing
+                current_data.is_etc = etf.is_etc
+                current_data.is_etf = etf.is_etf
+                current_data.is_hedged = etf.is_hedged
+                current_data.hedged_currency = etf.hedged_currency
+                current_data.is_index_fund = etf.is_index_fund
+                current_data.is_leveraged = etf.is_leveraged
+                current_data.is_physical_full = etf.is_physical_full
+                current_data.is_short = etf.is_short
+                current_data.is_socially_responsible_fund = etf.is_socially_responsible_fund
+                current_data.is_structured = etf.is_structured
+                current_data.is_swap_based_etf = etf.is_swap_based_etf
+                current_data.is_synthetic_replication = etf.is_synthetic_replication
 
                 self.session.commit()
 
