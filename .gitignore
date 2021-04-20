@@ -4,3 +4,4 @@ geckodriver.log
 etfoptimizer.egg-info/
 venv/
 build/
+dist
