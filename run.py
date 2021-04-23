@@ -142,15 +142,15 @@ def crawl_justetf():
 
 
 @cli.command()
-@click.option('--outfile', '-o', default='extracted_isins.csv')
+@click.option('--outfile', '-o', default='extracted_isins.csv', help='output file for extracted isins')
 def extract_isins(outfile):
     """Extracts all ISINS from db to a csv file."""
     extract_isins_from_db(outfile)
 
 
 @cli.command()
-@click.option('--historyfile', '-h', default='etf_history.csv')
-@click.option('--isinfile', '-i', default='isin.csv')
+@click.option('--historyfile', '-h', default='etf_history.csv', help='csv file containing etf history (output from Refinitiv)')
+@click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
 def import_historyt(historyfile, isinfile):
     """Extracts historic etf data from Refinitiv (Thomson Reuters)."""
     save_history(historyfile, isinfile)
