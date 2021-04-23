@@ -5,7 +5,7 @@ from unittest import TestCase
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
 from db.dbmodels import EtfHistory
-from etf_history import get_isin_dict, get_etf_history
+from etf_history import get_isin_dict, write_history_to_db
 
 
 class TestEtfHistory(TestCase):
@@ -18,7 +18,7 @@ class TestEtfHistory(TestCase):
 
     def test_get_etf_history(self):
         session = UnifiedAlchemyMagicMock()
-        get_etf_history(os.path.join('../docs', 'examples'), session)
+        write_history_to_db(os.path.join('../docs', 'examples'), session)
 
         # querying for further data will fail due to limitations of this mock
         date = datetime.strptime('01.02.2021', '%d.%m.%Y').date()

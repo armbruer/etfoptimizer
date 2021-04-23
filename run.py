@@ -28,10 +28,6 @@ def prompt(ask):
     return input(ask + " [y|n]\n>>> ").lower().strip()[0] == 'y'
 
 
-def path_prompt(ask):
-    return input(ask + "\n>>> ")
-
-
 def run_crawler(name: str):
     process = CrawlerProcess(get_project_settings())
     process.crawl(name)
@@ -117,13 +113,6 @@ def setupi():
     if prompt("Run extraetf crawler?"):
         crawl_extraetf()
 
-    if prompt("Extract ISINs?"):
-        extract_isins_from_db('isins.csv')
-
-    if prompt("Save ETF history?"):
-        path = path_prompt("Please specify the path to the csv files.")
-        save_history(path)
-
 
 @cli.command()
 def drop_static_data():
@@ -153,10 +142,18 @@ def crawl_justetf():
 
 
 @cli.command()
-@click.option('--outfile', '-o', default='isins.csv')
+@click.option('--outfile', '-o', default='extracted_isins.csv')
 def extract_isins(outfile):
     """Extracts all ISINS from db to a csv file."""
     extract_isins_from_db(outfile)
+
+
+@cli.command()
+@click.option('--historyfile', '-h', default='etf_history.csv')
+@click.option('--isinfile', '-i', default='isin.csv')
+def import_historyt(historyfile, isinfile):
+    """Extracts historic etf data from Refinitiv (Thomson Reuters)."""
+    save_history(historyfile, isinfile)
 
 
 if __name__ == '__main__':

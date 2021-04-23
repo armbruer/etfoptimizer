@@ -18,7 +18,7 @@ def db_connect():
     global engine
     if engine is None:
         uri = get_project_settings().get("SQL_URI")
-        if not uri:
+        if uri is None:
             click.echo("Please setup the db connection first!")
             sys.exit(1)
         engine = create_engine(uri)

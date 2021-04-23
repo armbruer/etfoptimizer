@@ -3,14 +3,14 @@ from datetime import datetime
 
 import pytest
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-from etf_history import get_etf_history
+from etf_history import write_history_to_db
 from optimizer import PortfolioOptimizer
 
 
 @pytest.fixture()
 def session():
     s = UnifiedAlchemyMagicMock()
-    get_etf_history(os.path.join('../docs', 'examples'), s)
+    write_history_to_db(os.path.join('../docs', 'examples'), s)
     return s
 
 
