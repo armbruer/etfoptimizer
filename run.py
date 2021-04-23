@@ -151,7 +151,7 @@ def extract_isins(outfile):
 @cli.command()
 @click.option('--historyfile', '-h', default='etf_history.csv', help='csv file containing etf history (output from Refinitiv)')
 @click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
-def import_historyt(historyfile, isinfile):
+def import_history(historyfile, isinfile):
     """Extracts historic etf data from Refinitiv (Thomson Reuters)."""
     save_history(historyfile, isinfile)
 
