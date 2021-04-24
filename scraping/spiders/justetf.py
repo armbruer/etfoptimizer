@@ -59,8 +59,8 @@ class JustetfSpider(scrapy.Spider):
                 break
 
             # enable for debugging only
-            if next_page != 1:
-                break
+            # if next_page != 1:
+            #     break
 
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
