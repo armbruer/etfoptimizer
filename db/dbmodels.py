@@ -78,8 +78,6 @@ class Etf(Base):
     is_swap_based_etf = Column(Boolean)
     is_synthetic_replication = Column(Boolean)
 
-    categories = relationship("EtfCategory", secondary='isin_category')
-
 
 class EtfCategory(Base):
     """
@@ -90,8 +88,6 @@ class EtfCategory(Base):
     id = Column(Integer, autoincrement=True, primary_key=True)
     name = Column(String)
     type = Column(String)
-
-    isins = relationship("Etf", secondary='isin_category')
 
 
 class IsinCategory(Base):
