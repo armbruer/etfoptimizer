@@ -25,20 +25,24 @@ class Extraetf():
         self.cgry_cache = dict()
 
     def collect_data(self):
-        params = {'offset': 0, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1,
-                  'leverage_to': 1}
+        offset = 0
+        limit = 200
+
         while True:
-            response = requests.get('https://de.extraetf.com/api-v2/search/full/', params)
+            params = {'offset': offset, 'limit': limit, 'ordering': '-assets_under_management', 'leverage_from': 1,
+                      'leverage_to': 1}
+            response = requests.get('https://de.extraetf.com/api-v2/search/full/', params=params)
             time.sleep(2)
+
             data = response.json()
             results = data['results']
-
-            logging.info(f"Extracted etfs from page {params['offset'] % 200 + 1}!")
-
+            logging.info(f"Extracted etfs from page {int(offset / limit + 1)}!")
             self.parse_page(results)
 
             if data['next'] is None:
                 break
+
+            offset += limit
 
         self.session.close()
 
