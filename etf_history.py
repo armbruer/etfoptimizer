@@ -1,12 +1,12 @@
 import csv
 import logging
-import pandas
 import sys
-
 from datetime import datetime
-from db.dbconnector import create_table, db_connect
+
+import pandas
 from sqlalchemy.orm import sessionmaker
 
+from db.dbconnector import create_table, db_connect
 from db.dbmodels import EtfHistory
 
 
@@ -32,8 +32,8 @@ def write_history_to_db(historypath, isinpath, session):
         for j in range(1, len(etf_history.columns), 3):
             isin = isin_dict[header[j]]
             price = float(etf_history.iloc[i, j])
-            price_index = float(etf_history.iloc[i, j+1])
-            return_index = float(etf_history.iloc[i, j+2])
+            price_index = float(etf_history.iloc[i, j + 1])
+            return_index = float(etf_history.iloc[i, j + 2])
 
             __write_history_value(datapoint_date, isin, price, price_index, return_index, session)
 

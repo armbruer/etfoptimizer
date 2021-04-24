@@ -5,7 +5,9 @@
 
 
 import logging
+
 from sqlalchemy.orm import sessionmaker
+
 from db.dbconnector import db_connect, create_table
 from db.dbmodels import Etf
 
@@ -43,4 +45,3 @@ class EtfPipeline:
             raise
 
         return item
-

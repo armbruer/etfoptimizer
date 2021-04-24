@@ -1,4 +1,3 @@
-
 import sys
 
 import click
@@ -30,7 +29,6 @@ def create_table(engine):
     Creates the tables if they do not exist.
     """
     # unused models imports are required for sqlalchemy to create tables as expected
-    from db.dbmodels import Etf, EtfHistory, EtfCategory, IsinCategory
     Base.metadata.create_all(engine)
 
 

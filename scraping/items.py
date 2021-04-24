@@ -3,12 +3,12 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
 
+import locale
 from datetime import datetime
 
 from itemloaders.processors import MapCompose, TakeFirst
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
-import locale
 
 from db.dbmodels import Etf
 
@@ -49,7 +49,7 @@ def strip_float(x: str):
     for s in t.split():
         try:
             # convert percentage
-            res = float(s)/100
+            res = float(s) / 100
             break
         except:
             continue
@@ -95,10 +95,10 @@ class EtfItemLoader(ItemLoader):
     volatility_one_year_in = MapCompose(strip_float)
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
-    fiscal_year_end_month_in=MapCompose(empty_to_none, lambda x: x.split(' ')[1] if len(x.split(' ')) > 1 else x)
-    ucits_compliance_in=MapCompose(string_to_bool)
-    securities_lending_in=MapCompose(string_to_bool)
-    benchmark_index_in=MapCompose(str.strip)
+    fiscal_year_end_month_in = MapCompose(empty_to_none, lambda x: x.split(' ')[1] if len(x.split(' ')) > 1 else x)
+    ucits_compliance_in = MapCompose(string_to_bool)
+    securities_lending_in = MapCompose(string_to_bool)
+    benchmark_index_in = MapCompose(str.strip)
     isin_in = MapCompose(lambda x: x.replace(',', ''))
 
 
@@ -135,7 +135,7 @@ class EtfItem(Item):
     fund_domicile = Field()
     tax_data = Field()
 
-    #other
+    # other
     benchmark_index = Field()
 
     # legal structure

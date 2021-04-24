@@ -5,7 +5,7 @@ setup(
     version='0.1',
     packages=find_packages(),
     include_package_data=True,
-    install_requires= [
+    install_requires=[
         'Click>=7.1.2,<7.2',
         'scrapy>=2.5.0,<2.6',
         'selenium>=3.141.0',

@@ -85,6 +85,7 @@ def setupdb():
     change_db_uri()
     click.echo("Successfully change db configuration!")
 
+
 @cli.command()
 def setupi():
     """Runs the project setup interactively. Please use this option if you are unsure!
@@ -94,9 +95,10 @@ def setupi():
     if not uri:
         click.echo("You have not configured a db connection.")
         click.echo("Please ensure first you have correctly installed PostgreSQL\n" +
-                "1) Windows Launch SQL Shell (psql) from the application launcher and check with 'SELECT version();'"
-                "2) Linux: Run 'psql --version' from your CLI")
-        click.echo("Once you are done you will be prompted in the following with the parameters for your db connection.")
+                   "1) Windows Launch SQL Shell (psql) from the application launcher and check with 'SELECT version();'"
+                   "2) Linux: Run 'psql --version' from your CLI")
+        click.echo(
+            "Once you are done you will be prompted in the following with the parameters for your db connection.")
         if prompt("Continue?"):
             change_db_uri()
         else:
@@ -151,7 +153,8 @@ def extract_isins(outfile):
 
 
 @cli.command()
-@click.option('--historyfile', '-h', default='etf_history.csv', help='csv file containing etf history (output from Refinitiv)')
+@click.option('--historyfile', '-h', default='etf_history.csv',
+              help='csv file containing etf history (output from Refinitiv)')
 @click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
 def import_history(historyfile, isinfile):
     """Extracts historic etf data from Refinitiv (Thomson Reuters)."""
@@ -161,4 +164,3 @@ def import_history(historyfile, isinfile):
 if __name__ == '__main__':
     set_log_level(logging.INFO)
     cli()
-
