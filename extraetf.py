@@ -4,9 +4,9 @@ import time
 import requests
 from sqlalchemy.orm import sessionmaker
 
+from db.dbconnector import create_table, db_connect
 from db.dbmodels import EtfCategory, IsinCategory, Etf
 from scraping.items import EtfItem, string_to_date
-from db.dbconnector import create_table, db_connect
 
 
 class Extraetf():
@@ -15,15 +15,18 @@ class Extraetf():
         engine = db_connect()
         create_table(engine)
         self.category_types = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
-                       'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie', 'fund_currency_id': 'Währung',
-                       'bond_type_name': 'Anlageart', 'commodity_class_name': 'Rohstoffklasse', 'bond_maturity_name': 'Laufzeit',
-                       'bond_rating_name': 'Rating'}
-        self.Session = sessionmaker(bind=engine)
-        self.session = self.Session()
+                               'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie',
+                               'fund_currency_id': 'Währung',
+                               'bond_type_name': 'Anlageart', 'commodity_class_name': 'Rohstoffklasse',
+                               'bond_maturity_name': 'Laufzeit',
+                               'bond_rating_name': 'Rating'}
+        Session = sessionmaker(bind=engine)
+        self.session = Session()
         self.cgry_cache = dict()
 
     def collect_data(self):
-        params = {'offset': 0, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1, 'leverage_to': 1}
+        params = {'offset': 0, 'limit': 200, 'ordering': '-assets_under_management', 'leverage_from': 1,
+                  'leverage_to': 1}
         while True:
             response = requests.get('https://de.extraetf.com/api-v2/search/full/', params)
             time.sleep(2)
@@ -32,24 +35,26 @@ class Extraetf():
 
             logging.info(f"Extracted etfs from page {params['offset'] % 200 + 1}!")
 
-            for result in results:
-                detail_params = {'isin': result['isin']}
-                detail_response = requests.get('https://de.extraetf.com/api-v2/detail/', detail_params)
-                detail_result = detail_response.json()['results'][0]
-
-                item = self.parse_item(result, detail_result)
-                item = self.process_item(item)
-                self.save_item(item)
-
-                self.save_item_categories(result, detail_result)
-
-                time.sleep(0.25)  # slow down to avoid getting banned :)
+            self.parse_page(results)
 
             if data['next'] is None:
                 break
 
         self.session.close()
 
+    def parse_page(self, results):
+        for result in results:
+            detail_params = {'isin': result['isin']}
+            detail_response = requests.get('https://de.extraetf.com/api-v2/detail/', detail_params)
+            detail_result = detail_response.json()['results'][0]
+
+            item = self.parse_item(result, detail_result)
+            item = self.process_item(item)
+            self.save_item(item)
+
+            self.save_item_categories(result, detail_result)
+
+            time.sleep(0.25)  # slow down to avoid getting banned :)
 
     def parse_item(self, result, detail_result):
         name = result['fondname']
@@ -126,32 +131,7 @@ class Extraetf():
         try:
             current_data: Etf = self.session.query(Etf).filter_by(isin=etf.isin).first()
             if current_data is not None:
-                # we only update attributes that do not exist at justetf.com or are of higher precision at extraetf.com
-
-                # higher precision
-                current_data.fund_size = etf.fund_size
-                current_data.ter = etf.ter
-
-                # new
-                current_data.tax_germany = etf.tax_germany
-                current_data.net_assets_currency = etf.net_assets_currency
-                current_data.is_accumulating = etf.is_accumulating
-                current_data.is_derivative_based = etf.is_derivative_based
-                current_data.is_distributing = etf.is_distributing
-                current_data.is_etc = etf.is_etc
-                current_data.is_etf = etf.is_etf
-                current_data.is_hedged = etf.is_hedged
-                current_data.hedged_currency = etf.hedged_currency
-                current_data.is_index_fund = etf.is_index_fund
-                current_data.is_leveraged = etf.is_leveraged
-                current_data.is_physical_full = etf.is_physical_full
-                current_data.is_short = etf.is_short
-                current_data.is_socially_responsible_fund = etf.is_socially_responsible_fund
-                current_data.is_structured = etf.is_structured
-                current_data.is_swap_based_etf = etf.is_swap_based_etf
-                current_data.is_synthetic_replication = etf.is_synthetic_replication
-
-                self.session.commit()
+                self.update_item(current_data, etf)
 
             else:
                 self.session.add(etf)
@@ -161,38 +141,69 @@ class Extraetf():
             self.session.rollback()
             raise
 
+    def update_item(self, current_data, etf):
+        # we only update attributes that do not exist at justetf.com or are of higher precision at extraetf.com
+        # higher precision
+        current_data.fund_size = etf.fund_size
+        current_data.ter = etf.ter
+        # new
+        current_data.tax_germany = etf.tax_germany
+        current_data.net_assets_currency = etf.net_assets_currency
+        current_data.is_accumulating = etf.is_accumulating
+        current_data.is_derivative_based = etf.is_derivative_based
+        current_data.is_distributing = etf.is_distributing
+        current_data.is_etc = etf.is_etc
+        current_data.is_etf = etf.is_etf
+        current_data.is_hedged = etf.is_hedged
+        current_data.hedged_currency = etf.hedged_currency
+        current_data.is_index_fund = etf.is_index_fund
+        current_data.is_leveraged = etf.is_leveraged
+        current_data.is_physical_full = etf.is_physical_full
+        current_data.is_short = etf.is_short
+        current_data.is_socially_responsible_fund = etf.is_socially_responsible_fund
+        current_data.is_structured = etf.is_structured
+        current_data.is_swap_based_etf = etf.is_swap_based_etf
+        current_data.is_synthetic_replication = etf.is_synthetic_replication
+        self.session.commit()
+
     def save_item_categories(self, result, detail_result):
         isin = result['isin']
         categories = [(detail_result[cat_key], cat_type) for cat_key, cat_type in self.category_types.items()]
 
         try:
             for cat_name, cat_type in categories:
-                if cat_name is not None and cat_name:
-                    cat_id = None
-                    if cat_name in self.cgry_cache:
-                        cat_id = self.cgry_cache[cat_name]
-                    else:
-                        etf_category = EtfCategory()
-                        etf_category.name = cat_name
-                        etf_category.type = cat_type
-                        self.session.add(etf_category)
-                        self.session.commit()
-                        self.session.refresh(etf_category)  # refresh to get auto-incremented cat_id
+                self.save_item_category(cat_name, cat_type, isin)
 
-                        cat_id = etf_category.id
-                        self.cgry_cache[cat_name] = cat_id
-
-                    if cat_id:
-                        ic = IsinCategory()
-                        ic.etf_isin = isin
-                        ic.category_id = cat_id
-                        self.session.add(ic)
-                    else:
-                        logging.error(f"No ID was found for item with category {cat_name}")
-
-            self.session.commit()  # only commit once after all categories of one item have been handled
         except:  # todo better exception handling?
             logging.warning(f"Could not save data for {result['isin']}!")
             self.session.rollback()
             raise
 
+    def save_item_category(self, cat_name, cat_type, isin):
+        if cat_name is not None and cat_name:
+            cat_id = None
+            if cat_name in self.cgry_cache:
+                # if category has already been added to db we can use the cache to retrieve its id
+                cat_id = self.cgry_cache[cat_name]
+            else:
+                cat_id = self.add_category(cat_name, cat_type)
+            if cat_id:
+                ic = IsinCategory()
+                ic.etf_isin = isin
+                ic.category_id = cat_id
+                self.session.add(ic)
+                self.session.commit()
+
+            else:
+                logging.error(f"No ID was found for item with category {cat_name}")
+
+    def add_category(self, cat_name, cat_type):
+        etf_category = EtfCategory()
+        etf_category.name = cat_name
+        etf_category.type = cat_type
+        self.session.add(etf_category)
+        self.session.commit()
+        self.session.refresh(etf_category)  # refresh to get auto-incremented cat_id
+        cat_id = etf_category.id
+        self.cgry_cache[cat_name] = cat_id
+        return cat_id

@@ -9,10 +9,11 @@ from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
 from db.dbconnector import db_connect, drop_static_tables
+from etf_history import save_history
 from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
 
-from etf_history import save_history
+
 # todo db security?
 
 
@@ -125,6 +126,7 @@ def drop_static_data():
 def crawl_extraetf():
     """Runs the extraetf crawler."""
     extraetf = Extraetf()
+    # TODO fix no logging output...
     extraetf.collect_data()
 
     click.echo('Finished crawling extraetf.com')
