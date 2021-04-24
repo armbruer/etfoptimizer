@@ -49,6 +49,7 @@ def strip_float(x: str):
     for s in t.split():
         try:
             # convert percentage
+            s = s.replace(',', '.')
             res = float(s) / 100
             break
         except:
@@ -57,7 +58,7 @@ def strip_float(x: str):
     return res
 
 
-date_formats = [('en_US.utf8', '%d %B %Y'), ('de_DE.utf8', '%d %B %Y'), ('en_US.utf8', '%Y-%m-%d')]
+date_formats = [('en_US.utf8', '%d. %B %Y'), ('de_DE.utf8', '%d. %B %Y'), ('en_US.utf8', '%Y-%m-%d')]
 
 
 def string_to_date(x: str):
@@ -95,7 +96,9 @@ class EtfItemLoader(ItemLoader):
     volatility_one_year_in = MapCompose(strip_float)
     inception_in = MapCompose(empty_to_none, string_to_date)
     ter_in = MapCompose(strip_float)
-    fiscal_year_end_month_in = MapCompose(empty_to_none, lambda x: x.split(' ')[1] if len(x.split(' ')) > 1 else x)
+
+    month_to_int = lambda x: int(x.split(' ')[0].replace('.', '')) if len(x.split(' ')) > 1 else x
+    fiscal_year_end_month_in = MapCompose(empty_to_none, month_to_int)
     ucits_compliance_in = MapCompose(string_to_bool)
     securities_lending_in = MapCompose(string_to_bool)
     benchmark_index_in = MapCompose(str.strip)

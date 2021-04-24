@@ -60,7 +60,7 @@ class JustetfSpider(scrapy.Spider):
 
             # enable for debugging only
             # if next_page != 1:
-            #     break
+            #    break
 
             # a hacky fix for not being able to click on the next_page button
             # https://stackoverflow.com/questions/48665001/can-not-click-on-a-element-elementclickinterceptedexception-in-splinter-selen
@@ -74,7 +74,6 @@ class JustetfSpider(scrapy.Spider):
         # xpath counting starts with one :/
         values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]
         return values
-
 
     def handle_cookies_popup(self, accept_xpath):
         """
@@ -110,13 +109,14 @@ class JustetfSpider(scrapy.Spider):
         benchmark_index = response.xpath('//p/a[@class="label label-default labelwrap"]/text()').get()
         l.add_value('benchmark_index', benchmark_index)
 
-        ter = response.xpath('//div[@class="h5" and contains(text(), "Fees")]/../div[2]/div/div[1]/div[1]/text()').get()
+        ter = response.xpath(
+            '//div[@class="h5" and contains(text(), "Kosten")]/../div[2]/div/div[1]/div[1]/text()').get()
         l.add_value('ter', ter)
 
-        risk_parent = response.xpath('//div[@class="h5" and contains(text(), "Risk")]/..')
-
+        risk_parent = response.xpath('//div[@class="h5" and contains(text(), "Risiko")]/..')
         l.add_value('fund_size', risk_parent.xpath('div[2]/div/div[1]/div[1]/text()').get())
-        risk_table = risk_parent.xpath('table/tbody')
+
+        risk_table = response.xpath('//td/h3[contains(text(), "Replikationsmethode")]/../../..')
         values = self.get_table_values(risk_table, 7, '/td[2]/text()')
         l.add_value('replication', risk_table.xpath('*[1]/td[2]/span[1]/text()').get())
         l.add_value('legal_structure', values[1])
@@ -126,16 +126,14 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('volatility_one_year', risk_table.xpath('*[6]/td[2]/span[1]/text()').get())
         l.add_value('inception', values[6])
 
-        dividend_table = response.xpath('//div[@class="h5 margin-lineup" and contains(text(), "Dividend/ '
-                                        'Taxes")]/../table/tbody')
+        dividend_table = response.xpath('//td[contains(text(), "Ausschüttung")]/../..')
         values = self.get_table_values(dividend_table, 4, '/td[2]/text()')
         l.add_value('distribution_policy', values[0])
         l.add_value('distribution_frequency', values[1])
         l.add_value('fund_domicile', values[2])
         l.add_value('tax_data', dividend_table.xpath('*[4]/td[2]/a/@href').get())
 
-        legal_structure_table = response.xpath('//div[@class="h5" and contains(text(), "Legal '
-                                               'structure")]/../table/tbody')
+        legal_structure_table = response.xpath('//td[contains(text(), "Fondsstruktur")]/../..')
         values = self.get_table_values(legal_structure_table, 10, '/td[2]/text()')
         l.add_value('fund_structure', values[0])
         l.add_value('ucits_compliance', values[1])
@@ -144,17 +142,17 @@ class JustetfSpider(scrapy.Spider):
         l.add_value('investment_advisor', values[4])
         l.add_value('custodian_bank', values[5])
         l.add_value('revision_company', values[6])
-        l.add_value('fiscal_year_end', values[7])
+        l.add_value('fiscal_year_end_month', values[7])
         l.add_value('swiss_representative', values[8])
         l.add_value('swiss_paying_agent', values[9])
 
-        tax_status_table = response.xpath('//td[contains(text(), "Switzerland")]/../..')
+        tax_status_table = response.xpath('//td[contains(text(), "Schweiz")]/../..')
         values = self.get_table_values(tax_status_table, 3, path='/td[2]/span/text()')
         l.add_value('tax_switzerland', values[0])
         l.add_value('tax_austria', values[1])
         l.add_value('tax_uk', values[2])
 
-        replication_table = response.xpath('//td[contains(text(), "Indextype")]/../..', )
+        replication_table = response.xpath('//td[contains(text(), "Indextyp")]/../..', )
         values = self.get_table_values(replication_table, 5, path='/td[2]/span/text()')
         l.add_value('indextype', values[0])
         l.add_value('swap_counterparty', values[1])
