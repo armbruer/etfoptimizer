@@ -1,22 +1,23 @@
-import os
 from datetime import datetime
 
-import pytest
-from mock_alchemy.mocking import UnifiedAlchemyMagicMock
-from etf_history import write_history_to_db
+from sqlalchemy.orm import sessionmaker
+
+from db.dbconnector import db_connect, create_table
 from optimizer import PortfolioOptimizer
 
 
-@pytest.fixture()
-def session():
-    s = UnifiedAlchemyMagicMock()
-    write_history_to_db(os.path.join('../docs', 'examples'), s)
-    return s
+def test_optimize():
+    engine = db_connect()
+    create_table(engine)
 
+    Session = sessionmaker(engine)
+    session = Session()
 
-def test_optimize(session):
     start_date = datetime.strptime('01.02.2021', '%d.%m.%Y').date()
     end_date = datetime.strptime('05.02.2021', '%d.%m.%Y').date()
     isins = ['LU0392496690', 'DE000A0D8Q23']
     po = PortfolioOptimizer(isins, start_date, end_date, session)
-    po.optimize()
+    ef = po.efficient_frontier()
+    print(ef.portfolio_performance())
+    print(ef.clean_weights())
+    session.close()

@@ -17,7 +17,8 @@ setup(
         'dash-bootstrap-components>=0.12.0,<0.13',
         'mock-alchemy>=0.2.1,<0.3',
         'PyPortfolioOpt',
-        'pytest>=6.2.3,<6.3'
+        'pytest>=6.2.3,<6.3',
+        'sklearn'
     ],
     entry_points='''
         [console_scripts]

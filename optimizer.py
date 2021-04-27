@@ -19,16 +19,15 @@ class PortfolioOptimizer:
     session: Session
 
     def __post_init__(self):
-        query = self.session.query(EtfHistory.datapoint_date, EtfHistory.price) \
+        query = self.session.query(EtfHistory.isin, EtfHistory.datapoint_date, EtfHistory.price) \
             .filter(EtfHistory.datapoint_date.between(self.start_date, self.end_date)) \
             .filter(EtfHistory.isin.in_(self.isins)).statement
-        self.df = pd.read_sql(query, self.session.bind, index_col=['datapoint_date', 'isin'])
-        self.df = self.df.unstack('isin')
+        self.df = pd.read_sql(query, self.session.bind)
+        self.df = self.df.pivot(index='datapoint_date', columns='isin', values='price')
 
-    def optimize(self):
+    def efficient_frontier(self):
         mu = mean_historical_return(self.df)
         S = CovarianceShrinkage(self.df).ledoit_wolf()
         ef = EfficientFrontier(mu, S)
-        weights = ef.max_sharpe()  # exact results
-        print(ef.clean_weights())
-        ef.portfolio_performance(verbose=True)
+        ef.max_sharpe()  # todo risk free rate
+        return ef
