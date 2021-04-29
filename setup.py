@@ -18,7 +18,9 @@ setup(
         'mock-alchemy>=0.2.1,<0.3',
         'PyPortfolioOpt',
         'pytest>=6.2.3,<6.3',
-        'sklearn'
+        'sklearn',
+        'numpy',
+        'plotly'
     ],
     entry_points='''
         [console_scripts]
