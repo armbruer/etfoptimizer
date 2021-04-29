@@ -35,8 +35,9 @@ class Extraetf():
             time.sleep(2)
 
             data = response.json()
+            page = int(offset / limit + 1)
             results = data['results']
-            logging.info(f"Extracted etfs from page {int(offset / limit + 1)}!")
+            logging.info(f"Extracted etfs from page {page}!")
             self.parse_page(results)
 
             if data['next'] is None:
@@ -61,17 +62,15 @@ class Extraetf():
             time.sleep(0.25)  # slow down to avoid getting banned :)
 
     def parse_item(self, result, detail_result):
-        name = result['fondname']
-        logging.info(f"Parsing ETF '{name}'")
-
         item = EtfItem()
         for field in item.fields:
             item.setdefault(field, None)
 
-        item['name'] = name
+        item['name'] = result['fondname']
         item['isin'] = result['isin']
         item['wkn'] = result['wkn']
         item['ter'] = result['ter']
+        logging.info(f"Parsing ETF '{result['isin']}'")
 
         replication = detail_result['replication_methodology_first_level']
         repl_detail = detail_result['replication_methodology_second_level']
@@ -135,13 +134,14 @@ class Extraetf():
         try:
             current_data: Etf = self.session.query(Etf).filter_by(isin=etf.isin).first()
             if current_data is not None:
+                logging.info(f"Updating existing ETF {current_data.isin}")
                 self.update_item(current_data, etf)
 
             else:
                 self.session.add(etf)
                 self.session.commit()
         except:
-            logging.warning(f"Could not save data for {etf.name}!")
+            logging.warning(f"Could not save data for {etf.isin}!")
             self.session.rollback()
             raise
 
