@@ -5,6 +5,8 @@
 import copy
 
 import numpy as np
+import plotly
+import plotly.express as px
 import plotly.graph_objects as go
 from plotly.graph_objs import Figure
 from pypfopt import exceptions, EfficientFrontier, CLA
@@ -22,6 +24,51 @@ def _ef_default_returns_range(ef, points):
     min_ret = ef_minvol.portfolio_performance()[0]
     max_ret = ef_maxret._max_return()
     return np.linspace(min_ret, max_ret - 0.0001, points)
+
+
+def _plot_cla(cla, points, fig, show_assets):
+    """
+    Helper function to plot the efficient frontier from a CLA object
+    """
+    if cla.weights is None:
+        cla.max_sharpe()
+    optimal_ret, optimal_risk, _ = cla.portfolio_performance()
+
+    if cla.frontier_values is None:
+        cla.efficient_frontier(points=points)
+
+    mus, sigmas, _ = cla.frontier_values
+
+    fig.add_trace(
+        go.Line(
+            x=sigmas,
+            y=mus,
+            name='Efficient Frontier',
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            optimal_risk,
+            optimal_ret,
+            name='Optimal',
+            mode="markers",
+            marker=dict(size=50, color="red", symbol='x')  # TODO markersize in matplotlib was 100
+        )
+    )
+
+    if show_assets:
+        fig.add_trace(
+            go.Scatter(
+                np.sqrt(np.diag(cla.cov_matrix)),
+                cla.expected_returns,
+                name='ETFs',
+                mode="markers",
+                marker=dict(size=10, color="black")  # TODO markersize in matplotlib was 30
+            )
+        )
+
+    return fig
 
 
 def _plot_ef(ef, ef_param, ef_param_range, fig: Figure, show_assets):
@@ -67,7 +114,7 @@ def _plot_ef(ef, ef_param, ef_param_range, fig: Figure, show_assets):
                 y=ef.expected_returns,
                 name='ETFs',
                 mode="markers",
-                marker={"size": 10, "color": "black"}  # TODO markersize in matplotlib was 30
+                marker=dict(size=10, color="black")  # TODO markersize in matplotlib was 30
             )
         )
     return fig
@@ -116,56 +163,35 @@ def plot_efficient_frontier(
         raise NotImplementedError("Please pass EfficientFrontier or CLA object")
 
     fig.update_layout(
-        title='Efficient Frontier',  # TODO
         xaxis_title='Volatility',
         yaxis_title='Return',
-        # TODO fonts, legend title?
+        # TODO fonts, legend title, title?
     )
 
-    fig.show()
+    fig.show()  # TODO hover info
     return fig
 
 
-def _plot_cla(cla, points, fig, show_assets):
-    """
-    Helper function to plot the efficient frontier from a CLA object
-    """
-    if cla.weights is None:
-        cla.max_sharpe()
-    optimal_ret, optimal_risk, _ = cla.portfolio_performance()
-
-    if cla.frontier_values is None:
-        cla.efficient_frontier(points=points)
-
-    mus, sigmas, _ = cla.frontier_values
-
-    fig.add_trace(
-        go.Line(
-            x=sigmas,
-            y=mus,
-            name='Efficient Frontier',
-        )
-    )
+def plot_simulated_portfolios(mu, S, fig, n_samples=10000):
+    w = np.random.dirichlet(np.ones(len(mu)), n_samples)
+    rets = w.dot(mu)
+    stds = np.sqrt((w.T * (S @ w.T)).sum(axis=0))
+    sharpes = rets / stds
 
     fig.add_trace(
         go.Scatter(
-            optimal_risk,
-            optimal_ret,
-            name='Optimal',
-            mode="markers",
-            marker={"size": 10, "color": "red"}  # TODO markersize in matplotlib was 30, x markers
+            x=stds,
+            y=rets,
+            # TODO c paramerter was set in matplotlib with sharpes
+            # marker_colorscale=plotly.colors.sequential.Viridis,
+            marker=dict(size=50, reversescale=True, color=plotly.colors.sequential.Viridis, symbol='circle-dot')
         )
     )
 
-    if show_assets:
-        fig.add_trace(
-            go.Scatter(
-                np.sqrt(np.diag(cla.cov_matrix)),
-                cla.expected_returns,
-                name='ETFs',
-                mode="markers",
-                marker={"size": 10, "color": "black"}  # TODO markersize in matplotlib was 30
-            )
-        )
-
     return fig
+
+
+def plot_performance_pie(df):
+    fig = px.pie(df, values='percent', names='name', hover_name='name', hover_data=['quantities', 'isin'],
+                 title='Portfolio Allocation')
+    fig.show()
