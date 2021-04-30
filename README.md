@@ -4,18 +4,28 @@ Windows & Linux
 
 Dependencies
 ============
-* Python 3: Ensure it is installed in your `PATH` environment variable. 
-  To check run `python --version` from your Terminal (Linux) or your Power Shell (Windows). The version
-  must be 3.5.X or higher.
+* Python 3: Ensure it is installed in your `PATH` environment variable. To check run `python --version` from your
+  Terminal (Linux), or from your Power Shell (Windows). We have tested only with versions 3.9 and above. In case you
+  want to use an older version, no guarantees can be made.
+* C++ Build Tools (required for the [solver](https://www.cvxpy.org/) used by
+  the [portfolio optimization library](https://github.com/robertmartin8/PyPortfolioOpt)):
+    * Linux: your distribution should have a working C++ toolchain per default installed
+    *
+    Windows: ([download](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+    the visual studio build tools,
+    # todo update link!
+    [install instructions](https://drive.google.com/file/d/0B4GsMXCRaSSIOWpYQkstajlYZ0tPVkNQSElmTWh1dXFaYkJr/view))
 * Chrome Driver (required due to `selenium`)
     * Chrome might be sufficient, depending on your OS
-    * Ensure it is installed in your `PATH` environment variable  
+    * Ensure it is installed in your `PATH` environment variable
     * Other drivers (Firefox, ...) are not yet supported
     * [Driver installation details](https://selenium-python.readthedocs.io/installation.html)
-* A local or remote database that is [compatible](https://www.sqlalchemy.org/features.html) with *SQLAlchemy*. 
-    *PostgreSQL* is strongly recommended as it is the only one tested.
-    * Arch Linux [setup guide](https://wiki.archlinux.org/index.php/PostgreSQL) (most steps should also be applicable to other `systemd` based distributions)
-    * In Fedora there is one quirk: make sure you change `pg_hba.conf` as described in this [answer](https://support.plesk.com/hc/en-us/articles/360024041714-Unable-to-change-PostgreSQL-admin-password-or-log-in-to-PostgreSQL-on-Plesk-psql-FATAL-Ident-authentication-failed-for-user-postgres-)
+* A local or remote database that is [compatible](https://www.sqlalchemy.org/features.html) with *SQLAlchemy*.
+  *PostgreSQL* is strongly recommended as it is the only one tested.
+    * Arch Linux [setup guide](https://wiki.archlinux.org/index.php/PostgreSQL) (most steps should also be applicable to
+      other `systemd` based distributions)
+    * In Fedora there is one quirk: make sure you change `pg_hba.conf` as described in
+      this [answer](https://support.plesk.com/hc/en-us/articles/360024041714-Unable-to-change-PostgreSQL-admin-password-or-log-in-to-PostgreSQL-on-Plesk-psql-FATAL-Ident-authentication-failed-for-user-postgres-)
     * Windows [setup guide](https://www.postgresqltutorial.com/install-postgresql/)
 * On Linux: Ensure you have installed `de_DE` and `en_US` languages. 
   Not sure yet if and what is required on Windows.
