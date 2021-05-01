@@ -10,11 +10,9 @@ Dependencies
 * C++ Build Tools (required for the [solver](https://www.cvxpy.org/) used by
   the [portfolio optimization library](https://github.com/robertmartin8/PyPortfolioOpt)):
     * Linux: your distribution should have a working C++ toolchain per default installed
-    *
-    Windows: ([download](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
-    the visual studio build tools,
-    # todo update link!
-    [install instructions](https://drive.google.com/file/d/0B4GsMXCRaSSIOWpYQkstajlYZ0tPVkNQSElmTWh1dXFaYkJr/view))
+    * Windows: [download](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
+      the visual studio build tools and follow the
+      [install instructions](https://drive.google.com/file/d/0B4GsMXCRaSSIOWpYQkstajlYZ0tPVkNQSElmTWh1dXFaYkJr/view))
 * Chrome Driver (required due to `selenium`)
     * Chrome might be sufficient, depending on your OS
     * Ensure it is installed in your `PATH` environment variable
