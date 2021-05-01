@@ -20,7 +20,8 @@ setup(
         'pytest>=6.2.3,<6.3',
         'sklearn',
         'numpy',
-        'plotly'
+        'plotly',
+        'openpyxl'
     ],
     entry_points='''
         [console_scripts]

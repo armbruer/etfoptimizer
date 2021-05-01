@@ -1,25 +1,36 @@
-from sqlalchemy.orm import sessionmaker
-from db.dbconnector import db_connect
-import csv
 import logging
+import os
 
+import pandas as pd
+from openpyxl import load_workbook
+from sqlalchemy.orm import sessionmaker
+
+from db.dbconnector import db_connect
 from db.dbmodels import Etf
 
 
-def extract_isins_from_db(out_file="isins.csv"):
-    pre = "[ISIN Extractor]: "
+def extract_isins_from_db(out_file):
     engine = db_connect()
-    logging.info(pre + "Connected to db.")
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    isins = [etf.isin for etf in session.query(Etf)]
-    logging.info(pre + "Retrieved ISINs from db.")
+    df_isins = pd.read_sql(session.query(Etf).statement, session.bind)
     session.close()
 
-    with open(out_file, 'w', newline='') as isin_file:
-        wr = csv.writer(isin_file, quoting=csv.QUOTE_ALL)
-        for isin in isins:
-            wr.writerow([isin])
+    if os.path.isfile(out_file):
+        book = load_workbook(out_file)
+        # overwrite isins sheet if it already exists
+        ws_rem = book.get_sheet_by_name('isins')
+        if ws_rem is not None:
+            book.remove_sheet(ws_rem)
 
-    logging.info(pre + f"Wrote ISINS to {out_file}")
+        # keep existing content in other sheets
+        writer = pd.ExcelWriter(out_file, engine='openpyxl')
+        writer.book = book
+    else:
+        writer = pd.ExcelWriter(out_file, engine='openpyxl')
+
+    df_isins.to_excel(writer, sheet_name='isins')
+    writer.save()
+    writer.close()
+    logging.info(f"Wrote ISINs into {out_file}")

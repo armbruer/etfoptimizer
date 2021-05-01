@@ -143,7 +143,7 @@ def crawl_justetf():
 
 
 @etfopt.command()
-@click.option('--outfile', '-o', default='extracted_isins.csv', help='output file for extracted isins')
+@click.option('--outfile', '-o', default='extracted_isins.xlsx', help='output file for extracted isins')
 def extract_isins(outfile):
     """Extracts all ISINS from db to a csv file."""
     extract_isins_from_db(outfile)
