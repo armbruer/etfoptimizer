@@ -14,9 +14,6 @@ from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
 
 
-# todo db security?
-
-
 def set_log_level(level):
     root = logging.getLogger()
     root.setLevel(level)
@@ -75,18 +72,18 @@ def change_db_uri():
 
 
 @click.group()
-def cli():
+def etfopt():
     pass
 
 
-@cli.command()
+@etfopt.command()
 def setupdb():
     """Sets up the db connection."""
     change_db_uri()
     click.echo("Successfully change db configuration!")
 
 
-@cli.command()
+@etfopt.command()
 def setupi():
     """Runs the project setup interactively. Please use this option if you are unsure!
     This is the recommended way, as it ensures correct ordering of running the crawlers."""
@@ -117,14 +114,14 @@ def setupi():
         crawl_extraetf()
 
 
-@cli.command()
+@etfopt.command()
 def drop_static_data():
     """Deletes tables holding static ETF data."""
     drop_static_tables(db_connect())
     click.echo('Successfully dropped tables.')
 
 
-@cli.command()
+@etfopt.command()
 def crawl_extraetf():
     """Runs the extraetf crawler."""
     extraetf = Extraetf()
@@ -134,7 +131,7 @@ def crawl_extraetf():
     click.echo('Finished crawling extraetf.com')
 
 
-@cli.command()
+@etfopt.command()
 def crawl_justetf():
     """Runs the justetf crawler."""
     try:
@@ -145,14 +142,14 @@ def crawl_justetf():
         raise
 
 
-@cli.command()
+@etfopt.command()
 @click.option('--outfile', '-o', default='extracted_isins.csv', help='output file for extracted isins')
 def extract_isins(outfile):
     """Extracts all ISINS from db to a csv file."""
     extract_isins_from_db(outfile)
 
 
-@cli.command()
+@etfopt.command()
 @click.option('--historyfile', '-h', default='etf_history.csv',
               help='csv file containing etf history (output from Refinitiv)')
 @click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
@@ -163,4 +160,4 @@ def import_history(historyfile, isinfile):
 
 if __name__ == '__main__':
     set_log_level(logging.INFO)
-    cli()
+    etfopt()
