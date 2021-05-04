@@ -4,20 +4,17 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import plotly.express as px
-
 from dash.dependencies import Input, Output, State
-from db.dbconnector import db_connect
-from db.dbmodels import EtfCategory
-from sqlalchemy.orm import sessionmaker
 
+from db import Session
+from db.models import EtfCategory
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
-category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie', 'Laufzeit', 'Rating']
+category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
+                  'Laufzeit', 'Rating']
 
 
 def extract_categories(category_types):
-    engine = db_connect()
-    Session = sessionmaker(engine)
     session = Session()
     categories = session.query(EtfCategory)
     session.close()
@@ -28,7 +25,7 @@ def extract_categories(category_types):
 
     for category in categories:
         extracted_categories[category.type].append((category.id, category.name))
-        
+
     return extracted_categories
 
 
@@ -36,15 +33,16 @@ def create_dropdown(dropdown_id, dropdown_data, width, multiple):
     dropdown = html.Div([
         dcc.Dropdown(
             id=dropdown_id + ' Dropdown',
-            options=[{'value': data_id, 'label': data_name} for data_id, data_name in sorted(dropdown_data, key=lambda x:x[1])],
+            options=[{'value': data_id, 'label': data_name} for data_id, data_name in
+                     sorted(dropdown_data, key=lambda x: x[1])],
             multi=multiple,
             clearable=True,
             placeholder=dropdown_id,
             searchable=True
         ),
-    ], 
-    id = dropdown_id + ' Dropdown Div', 
-    style={'width': width, 'display': 'inline-block', 'padding': 10})
+    ],
+        id=dropdown_id + ' Dropdown Div',
+        style={'width': width, 'display': 'inline-block', 'padding': 10})
 
     return dropdown
 
@@ -67,11 +65,11 @@ def create_button(button_id):
     button = html.Div([
         dbc.Button(
             button_id,
-            id = button_id + ' Button',
-            n_clicks = 0)
-    ], 
-    id = button_id + ' Button Div',
-    style={'display': 'inline-block', 'padding': 10})
+            id=button_id + ' Button',
+            n_clicks=0)
+    ],
+        id=button_id + ' Button Div',
+        style={'display': 'inline-block', 'padding': 10})
 
     return button
 
@@ -104,9 +102,9 @@ def create_pie_chart(pie_chart_id, pie_chart_data, width, display):
                 values=data_values,
             )
         )
-    ], 
-    id=pie_chart_id + " Pie Chart Div",
-    style={'width': width, 'display': display, 'padding': 10})
+    ],
+        id=pie_chart_id + " Pie Chart Div",
+        style={'width': width, 'display': display, 'padding': 10})
 
     return pie_chart
 

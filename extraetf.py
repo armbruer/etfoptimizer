@@ -2,25 +2,23 @@ import logging
 import time
 
 import requests
-from sqlalchemy.orm import sessionmaker
 
-from db.dbconnector import create_table, db_connect
-from db.dbmodels import EtfCategory, IsinCategory, Etf
+from db import sql_engine, Session
+from db.models import EtfCategory, IsinCategory, Etf
+from db.table_manager import create_table
 from scraping.items import EtfItem, string_to_date
 
 
 class Extraetf():
 
     def __init__(self):
-        engine = db_connect()
-        create_table(engine)
         self.category_types = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
                                'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie',
                                'fund_currency_id': 'Währung',
                                'bond_type_name': 'Anlageart', 'commodity_class_name': 'Rohstoffklasse',
                                'bond_maturity_name': 'Laufzeit',
                                'bond_rating_name': 'Rating'}
-        Session = sessionmaker(bind=engine)
+        create_table(sql_engine)
         self.session = Session()
         self.cgry_cache = dict()
 

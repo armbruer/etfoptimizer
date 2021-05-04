@@ -3,17 +3,13 @@ import os
 
 import pandas as pd
 from openpyxl import load_workbook
-from sqlalchemy.orm import sessionmaker
 
-from db.dbconnector import db_connect
-from db.dbmodels import Etf
+from db import Session
+from db.models import Etf
 
 
 def extract_isins_from_db(out_file):
-    engine = db_connect()
-    Session = sessionmaker(bind=engine)
     session = Session()
-
     df_isins = pd.read_sql(session.query(Etf).statement, session.bind)
     session.close()
 

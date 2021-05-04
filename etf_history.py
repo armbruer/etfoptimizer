@@ -4,21 +4,16 @@ import sys
 from datetime import datetime
 
 import pandas
-from sqlalchemy.orm import sessionmaker
 
-from db.dbconnector import create_table, db_connect
-from db.dbmodels import EtfHistory
+from db import Session, sql_engine
+from db.models import EtfHistory
+from db.table_manager import create_table
 
 
 def save_history(historypath, isinpath):
-    engine = db_connect()
-    create_table(engine)
-
-    Session = sessionmaker(engine)
+    create_table(sql_engine)
     session = Session()
-
     write_history_to_db(historypath, isinpath, session)
-
     session.close()
 
 

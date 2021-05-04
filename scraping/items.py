@@ -10,7 +10,7 @@ from itemloaders.processors import MapCompose, TakeFirst
 from scrapy import Field, Item
 from scrapy.loader import ItemLoader
 
-from db.dbmodels import Etf
+from db.models import Etf
 
 
 def string_to_bool(x: str):

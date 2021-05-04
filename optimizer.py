@@ -8,7 +8,7 @@ from pypfopt.expected_returns import mean_historical_return
 from pypfopt.risk_models import CovarianceShrinkage
 from sqlalchemy.orm import Session
 
-from db.dbmodels import EtfHistory
+from db.models import EtfHistory
 
 
 @dataclass

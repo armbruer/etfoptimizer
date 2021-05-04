@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import sessionmaker
 
-from db.dbconnector import db_connect, create_table
+from db.table_manager import db_connect, create_table
 from optimizer import PortfolioOptimizer
 
 

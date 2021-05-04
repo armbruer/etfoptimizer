@@ -1,7 +1,6 @@
 from sqlalchemy import String, Date, Integer, Float, Boolean, ForeignKey, Column
-from sqlalchemy.orm import relationship
 
-from db.dbconnector import Base
+from db.table_manager import Base
 
 
 class Etf(Base):

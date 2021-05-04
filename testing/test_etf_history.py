@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from mock_alchemy.mocking import UnifiedAlchemyMagicMock
 
-from db.dbmodels import EtfHistory
+from db.models import EtfHistory
 from etf_history import get_isin_dict, write_history_to_db
 
 

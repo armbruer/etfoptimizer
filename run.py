@@ -8,7 +8,8 @@ import click
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
-from db.dbconnector import db_connect, drop_static_tables
+from db import sql_engine
+from db.table_manager import drop_static_tables
 from etf_history import save_history
 from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
@@ -117,7 +118,7 @@ def setupi():
 @etfopt.command()
 def drop_static_data():
     """Deletes tables holding static ETF data."""
-    drop_static_tables(db_connect())
+    drop_static_tables(sql_engine)
     click.echo('Successfully dropped tables.')
 
 

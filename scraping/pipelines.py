@@ -6,21 +6,18 @@
 
 import logging
 
-from sqlalchemy.orm import sessionmaker
-
-from db.dbconnector import db_connect, create_table
-from db.dbmodels import Etf
+from db import sql_engine, Session
+from db.models import Etf
+from db.table_manager import create_table
 
 
 class EtfPipeline:
 
     def __init__(self):
-        engine = db_connect()
-        create_table(engine)
-        self.Session = sessionmaker(bind=engine)
+        create_table(sql_engine)
 
     def open_spider(self, spider):
-        self.session = self.Session()
+        self.session = Session()
 
     def close_spider(self, spider):
         self.session.close()
