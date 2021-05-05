@@ -4,14 +4,14 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
 import plotly.express as px
-from dash.dependencies import Input, Output, State
 
+from dash.dependencies import Input, Output, State
 from db import Session
 from db.models import EtfCategory
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
-category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
-                  'Laufzeit', 'Rating']
+category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 
+                  'Sektor', 'Rohstoffklasse', 'Strategie', 'Laufzeit', 'Rating']
 
 
 def extract_categories(category_types):
@@ -172,12 +172,12 @@ def create_app(app):
 @app.callback(
     [Output(component_id='Optimization Table', component_property='data'), Output(component_id='Optimization Pie Chart', component_property='figure')],
     [Input(component_id='Optimize Button', component_property='n_clicks')],
-    state = [State(component_id=((category_type.replace(' ', '')).lower()).capitalize() + ' Dropdown' ,component_property='value') for category_type in category_types] +
+    state = [State(component_id=((category_type.replace(' ', '')).lower()).capitalize() + ' Dropdown' , component_property='value') for category_type in category_types] +
     [State(component_id='Methode Dropdown', component_property='value'), State(component_id='Investment Input Field', component_property='value')],
     prevent_initial_call = True
 )
 
-def update_table(num_clicks, asset_klasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie, laufzeit, rating, methode, betrag):
+def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie, laufzeit, rating, methode, betrag):
     # TODO: Integrate optimization
     figure = px.pie(
                 values=[10, 10, 10, 10],
@@ -192,7 +192,7 @@ def update_table(num_clicks, asset_klasse, anlageart, region, land, währung, se
     prevent_initial_call = True
 )
 
-def update_table(value):
+def choose_output(value):
     if value == 'table':
         return [{'width': '100%', 'display': 'inline-block', 'padding': 10}, {'width': '33.33%', 'display': 'none', 'padding': 10}]
     else:
