@@ -21,7 +21,8 @@ setup(
         'scikit-learn>=0.24.0,<0.25.0',
         'numpy>=1.18.0,<1.21.0',
         'plotly>=4.14.0,<4.15.0',
-        'openpyxl>=3.0.2,<3.1.0'
+        'openpyxl>=3.0.2,<3.1.0',
+        'python-dateutil>=2.8.0,<2.9.0'
     ],
     entry_points='''
         [console_scripts]

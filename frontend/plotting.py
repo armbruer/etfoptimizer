@@ -6,7 +6,6 @@ import copy
 
 import numpy as np
 import plotly
-import plotly.express as px
 import plotly.graph_objects as go
 from plotly.graph_objs import Figure
 from pypfopt import exceptions, EfficientFrontier, CLA
@@ -190,8 +189,3 @@ def plot_simulated_portfolios(mu, S, fig, n_samples=10000):
 
     return fig
 
-
-def plot_performance_pie(df):
-    fig = px.pie(df, values='percent', names='name', hover_name='name', hover_data=['quantities', 'isin'],
-                 title='Portfolio Allocation')
-    fig.show()
