@@ -15,6 +15,21 @@ from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
 
 
+class AsciiArtGroup(click.Group):
+    def format_help(self, ctx, formatter):
+        click.echo("""
+ _____ _    __   _____       _   _           _
+|  ___| |  / _| |  _  |     | | (_)         (_)
+| |__ | |_| |_  | | | |_ __ | |_ _ _ __ ___  _ _______ _ __
+|  __|| __|  _| | | | | '_ \| __| | '_ ` _ \| |_  / _ \ '__|
+| |___| |_| |   \ \_/ / |_) | |_| | | | | | | |/ /  __/ |
+\____/ \__|_|    \___/| .__/ \__|_|_| |_| |_|_/___\___|_|
+                      | |
+                      |_|
+    """)
+        super().format_help(ctx, formatter)
+
+
 def set_log_level(level):
     root = logging.getLogger()
     root.setLevel(level)
@@ -72,7 +87,7 @@ def change_db_uri():
     update_line("SQL_URI", uri)
 
 
-@click.group()
+@click.group(cls=AsciiArtGroup)
 def etfopt():
     pass
 
