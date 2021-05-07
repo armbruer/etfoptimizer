@@ -2,6 +2,7 @@ import logging
 import time
 
 import requests
+from sqlalchemy.exc import IntegrityError
 
 from db import sql_engine, Session
 from db.models import EtfCategory, IsinCategory, Etf
@@ -183,7 +184,6 @@ class Extraetf():
 
     def save_item_category(self, cat_name, cat_type, isin):
         if cat_name is not None and cat_name:
-            cat_id = None
             if cat_name in self.cgry_cache:
                 # if category has already been added to db we can use the cache to retrieve its id
                 cat_id = self.cgry_cache[cat_name]
@@ -193,8 +193,15 @@ class Extraetf():
                 ic = IsinCategory()
                 ic.etf_isin = isin
                 ic.category_id = cat_id
-                self.session.add(ic)
-                self.session.commit()
+
+                try:
+                    self.session.add(ic)
+                    self.session.commit()
+                except IntegrityError as ie:
+                    # TODO Improve error handling by checking for the expected message
+                    logging.warning(f"Could not insert category data for ETF with ISIN {isin} and category {cat_name} "
+                                    f"as it already exists!")
+                    self.session.rollback()
 
             else:
                 logging.error(f"No ID was found for item with category {cat_name}")
