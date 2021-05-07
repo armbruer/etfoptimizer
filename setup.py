@@ -26,6 +26,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        etfopt=run:cli
+        etfopt=run:etfopt
     ''',
 )

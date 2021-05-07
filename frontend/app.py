@@ -8,11 +8,12 @@ import dash_html_components as html
 import dash_table
 import pandas as pd
 import plotly.express as px
+from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
 
-from dash.dependencies import Input, Output, State
-from db import Session
+from db import Session, sql_engine
 from db.models import EtfCategory, Etf
+from db.table_manager import create_table
 from optimizer import PortfolioOptimizer
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CERULEAN])
@@ -80,16 +81,16 @@ def create_button(button_id):
     return button
 
 
-def create_table(table_id, table_data, width, display):
+def create_data_table(table_id, table_data, width, display):
     table = html.Div([
         dash_table.DataTable(
             id=table_id + ' Table',
             columns=table_data,
+            sort_action="native"
         )
     ],
         id=table_id + ' Table Div',
-        style={'width': width, 'display': display, 'padding': 10},
-        sort_action="native")
+        style={'width': width, 'display': display, 'padding': 10})
 
     return table
 
@@ -172,7 +173,7 @@ def create_app(app):
 
     output_divs = []
     output_divs.append(create_performance_info())
-    output_divs.append(html.Center(create_table('Optimization', opt_res_table, '100%', 'none')))
+    output_divs.append(html.Center(create_data_table('Optimization', opt_res_table, '100%', 'none')))
     output_divs.append(html.Center(create_pie_chart('Optimization', [], '33.33%', 'none')))
 
     app.layout = html.Div([
@@ -276,5 +277,6 @@ def choose_output(value):
 
 
 if __name__ == '__main__':
+    create_table(sql_engine)
     create_app(app)
     app.run_server(debug=True)
