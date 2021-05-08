@@ -34,7 +34,7 @@ def _plot_cla(cla, points, fig, show_assets):
     optimal_ret, optimal_risk, _ = cla.portfolio_performance()
 
     if cla.frontier_values is None:
-        cla.efficient_frontier(points=points)
+        cla.calc_efficient_frontier(points=points)
 
     mus, sigmas, _ = cla.frontier_values
 

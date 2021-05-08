@@ -17,7 +17,7 @@ def test_optimize():
     end_date = datetime.strptime('05.02.2021', '%d.%m.%Y').date()
     isins = ['LU0392496690', 'DE000A0D8Q23']
     po = PortfolioOptimizer(isins, start_date, end_date, session)
-    ef = po.efficient_frontier()
+    ef = po.calc_efficient_frontier()
     print(ef.portfolio_performance())
     print(ef.clean_weights())
     session.close()
