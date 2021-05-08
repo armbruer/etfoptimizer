@@ -19,8 +19,9 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
-category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie', 'Laufzeit', 'Rating']
+app = dash.Dash("Das ist ein Test", external_stylesheets=[dbc.themes.FLATLY])
+category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
+                  'Laufzeit', 'Rating']
 
 
 def extract_categories(category_types):
@@ -310,4 +311,5 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 if __name__ == '__main__':
     create_table(sql_engine)
     create_app(app)
+    app.title = "Etf Portfolio Optimizer"
     app.run_server(debug=True)
