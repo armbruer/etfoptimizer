@@ -1,17 +1,16 @@
-import datetime
-from typing import List
-
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+import datetime
 import pandas as pd
 import plotly.express as px
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
+from typing import List
 
-from db import sql_engine, Session
+from db import Session, sql_engine
 from db.models import Etf, EtfCategory, IsinCategory
 from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
@@ -19,9 +18,21 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash("Das ist ein Test", external_stylesheets=[dbc.themes.FLATLY])
+app = dash.Dash("ETF Optimizer", external_stylesheets=[dbc.themes.FLATLY])
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
+
+
+def extract_isin_tuples() -> List[str]:
+    session = Session()
+    isins_db = session.query(IsinCategory)
+
+    isins = []
+    for isin in isins_db:
+        if not (isin.etf_isin, isin.etf_isin) in isins:
+            isins.append((isin.etf_isin, isin.etf_isin))
+
+    return isins
 
 
 def extract_categories(category_types):
@@ -183,11 +194,18 @@ def create_app(app):
     category_divs = []
     for category_type in category_types:
         category_divs.append(create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%', True))
+    isin_tuples = extract_isin_tuples()
+    category_divs.append(create_dropdown('Zusätzliche Isins', isin_tuples, '50%', True))
 
-    optimization_divs = []
-    optimization_divs.append(create_dropdown('Methode', test_data_methods, '100%', False))
-    optimization_divs.append(create_input_field('Investment', 'Betrag in Euro', '100%', 'text'))
-    optimization_divs.append(create_button('Optimize'))
+
+    optimization_divs_dropdown = []
+    optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '33.33%', False))
+
+    optimization_divs_input = []
+    optimization_divs_input.append(create_input_field('Betrag', 'Betrag in Euro', '33.33%', 'text'))
+    optimization_divs_input.append(create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '33.33%', 'text'))
+    optimization_divs_input.append(create_input_field('Cutoff', 'Cutoff', '33.33%', 'text'))
+    optimization_divs_input.append(create_button('Optimize'))
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -203,7 +221,10 @@ def create_app(app):
         html.Hr(),
         html.H3('Optimierung'),
         html.Div(
-            optimization_divs, style={'width': '100%', 'display': 'inline-block'}
+            optimization_divs_dropdown, style={'width': '100%', 'display': 'inline-block'}
+        ),
+        html.Div(
+            optimization_divs_input, style={'width': '100%', 'display': 'inline-block'}
         ),
         html.Hr(),
         html.Div(
@@ -227,7 +248,7 @@ def filter_by_category(isins, category):
             isins.pop(isin)
 
 
-def get_isins_from_filters(categories, session) -> List[str]:
+def get_isins_from_filters(categories, extra_isins, session) -> List[str]:
     isins_db = session.query(IsinCategory)
 
     isins = dict()
@@ -240,7 +261,16 @@ def get_isins_from_filters(categories, session) -> List[str]:
     for category in categories:
         filter_by_category(isins, category)
 
-    return list(isins.keys())
+    filtered_isins = list(isins.keys())
+
+    if extra_isins is None:
+        return filtered_isins
+
+    for isin in extra_isins:
+        if not isin in filtered_isins:
+            filtered_isins.append(isin)
+
+    return filtered_isins
 
 
 @app.callback(
@@ -255,11 +285,12 @@ def get_isins_from_filters(categories, session) -> List[str]:
     [Input('Optimize Button', 'n_clicks')],
     state=[State(((cat_type.replace(' ', '')).lower()).capitalize() + ' Dropdown', 'value') for cat_type in
            category_types] +
-          [State('Methode Dropdown', 'value'), State('Investment Input Field', 'value')],
+          [State('Zusätzliche Isins Dropdown', 'value'), State('Methode Dropdown', 'value'), State('Betrag Input Field', 'value'),
+           State('Risikofreier Zinssatz Input Field', 'value'), State('Cutoff Input Field', 'value')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
-                  laufzeit, rating, methode, betrag):
+                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
     show_nothing = [None, None, None,
                     {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
                     None, None, None, None]
@@ -268,7 +299,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     session = Session()
     selected_categories = [assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie, laufzeit,
                            rating]
-    isins = get_isins_from_filters(selected_categories, session)
+    isins = get_isins_from_filters(selected_categories, extra_isins, session)
     if not isins:
         session.close()
         return show_nothing
