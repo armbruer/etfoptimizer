@@ -27,10 +27,8 @@ def write_history_to_db(historypath, isinpath, session):
         for j in range(1, len(etf_history.columns), 3):
             isin = isin_dict[header[j]]
             price = float(etf_history.iloc[i, j])
-            price_index = float(etf_history.iloc[i, j + 1])
-            return_index = float(etf_history.iloc[i, j + 2])
 
-            __write_history_value(datapoint_date, isin, price, price_index, return_index, session)
+            __write_history_value(datapoint_date, isin, price, session)
 
 
 def __get_isin_dict(isinpath):
@@ -59,7 +57,7 @@ def __get_history_data(historypath):
     return etf_history, header
 
 
-def __write_history_value(datapoint_date, isin, price, price_index, return_index, session):
+def __write_history_value(datapoint_date, isin, price, session):
     try:
         res: EtfHistory = session.query(EtfHistory).filter_by(isin=isin, datapoint_date=datapoint_date).first()
         if res is not None:
@@ -67,8 +65,6 @@ def __write_history_value(datapoint_date, isin, price, price_index, return_index
             # reuters has changed its history prices/revenue for some entries as they were wrong (very unlikely)
             # but this way we have also covered this scenario
             res.price = price
-            res.price_index = price_index
-            res.return_index = return_index
 
             logging.warning(f"Overwriting history for ETF '{isin}'. Did you re-import this data?")
         else:
@@ -78,8 +74,6 @@ def __write_history_value(datapoint_date, isin, price, price_index, return_index
             data.datapoint_date = datapoint_date
 
             data.price = price
-            data.price_index = price_index
-            data.return_index = return_index
 
             session.add(data)
             session.commit()

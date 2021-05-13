@@ -1,10 +1,12 @@
 import eikon as ek
+import logging
+from datetime import date, datetime
+from eikon.data_grid import TR_Field
 from typing import List
 
-from eikon.data_grid import TR_Field
-
-from db import Session
-from db.models import IsinCategory
+from db import Session, sql_engine
+from db.models import EtfHistory, IsinCategory
+from db.table_manager import create_table
 
 # TODO: Include key in settings
 
@@ -23,24 +25,43 @@ def extract_isins() -> List[str]:
     return isins
 
 
+def write_history_value(isin, date, price, session):
+    try:
+        res: EtfHistory = session.query(EtfHistory).filter_by(isin=isin, datapoint_date=date).first()
+        if res is not None:
+            # allow re-imports of data, as nothing speaks against it, as this is useful in the following scenario:
+            # reuters has changed its history prices/revenue for some entries as they were wrong (very unlikely)
+            # but this way we have also covered this scenario
+            res.price = price
+
+            logging.warning(f"Overwriting history for ETF '{isin}'. Did you re-import this data?")
+        else:
+            data = EtfHistory()
+
+            data.isin = isin
+            data.datapoint_date = date
+            data.price = price
+
+            session.add(data)
+            session.commit()
+    except:
+        logging.warning(f'Could not save data!')
+        session.rollback()
+        raise
+
+
 if __name__ == '__main__':
-    #isins = extract_isins()
-    isins = ['DE0002635265', 'DE0006289465', 'DE000A0F5UK5', 'XS2115336336']
+    create_table(sql_engine)
+    session = Session()
 
-    data_get_data = ek.get_data(isins, 'TR.PRICE', parameters={'SDate': '20210201', 'EDate': '20210207', 'Frq': 'D'})
-    print(data_get_data)
-
-    print('\n----------------------------------------------------------------------------------------------------\n')
-
-    data_get_data = ek.get_data(isins, 'TR.MIDPRICE', parameters={'SDate': '20210201', 'EDate': '20210207', 'Frq': 'D'})
-    print(data_get_data)
-
-    print('\n----------------------------------------------------------------------------------------------------\n')
-
-    rics = ek.get_symbology(isins, from_symbol_type= 'ISIN',to_symbol_type='RIC')
-    print(rics)
-
-    print('\n----------------------------------------------------------------------------------------------------\n')
-
-    #data_get_timeseries = ek .get_timeseries(rics, fields=['VALUE', 'HIGH', 'LOW'], start_date='2021-02-01', end_date='2021-02-07')
-    #print(data_get_timeseries)
+    isins = extract_isins()
+    for i in range(0, len(isins)):
+        data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'], parameters={'SDate': '20210201', 'EDate': '20210207', 'Frq': 'D'})
+        for value in data[0].values:
+            value_isin = value[0]
+            value_date = datetime.strptime(value[1][0:10], '%Y-%m-%d').date()
+            value_price = value[2]
+            
+            write_history_value(value_isin, value_date, value_price, session)
+    
+    session.close()

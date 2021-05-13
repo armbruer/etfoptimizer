@@ -103,5 +103,3 @@ class EtfHistory(Base):
     datapoint_date = Column(Date, primary_key=True)
 
     price = Column(Float)
-    price_index = Column(Float)
-    return_index = Column(Float)
