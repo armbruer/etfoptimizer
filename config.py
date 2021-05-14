@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 config_file = 'etfoptimizer.ini'
-opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02'}
+opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
 db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': 'postgres',
               'password': 'Y4w3T48qWSYqQGWRakoh', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
 
