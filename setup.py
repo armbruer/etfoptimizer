@@ -22,7 +22,8 @@ setup(
         'numpy>=1.18.0,<1.21.0',
         'plotly>=4.14.0,<4.15.0',
         'openpyxl>=3.0.2,<3.1.0',
-        'python-dateutil>=2.8.0,<2.9.0'
+        'python-dateutil>=2.8.0,<2.9.0',
+        'eikon>=1.1.0,<1.2'
     ],
     entry_points='''
         [console_scripts]
