@@ -19,7 +19,7 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash("ETF Optimizer", external_stylesheets=[dbc.themes.FLATLY])
+app = dash.Dash("ETF Portfolio Optimizer", external_stylesheets=[dbc.themes.FLATLY])
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
 
@@ -90,10 +90,10 @@ def create_input_field(input_id, input_data, width, input_type, min=None, max=No
     return input_field
 
 
-def create_button(button_id):
+def create_button(button_id, button_text):
     button = html.Div([
         dbc.Button(
-            button_id,
+            button_text,
             id=button_id + ' Button',
             color='primary',
             n_clicks=0)
@@ -177,7 +177,7 @@ def create_figure(figure_id, width):
 
 def create_tabs():
     graph_data = [{'id': 't_asset_name', 'name': 'Name'}, {'id': 't_asset_isin', 'name': 'ISIN'},
-                  {'id': 't_asset_weight', 'name': 'Weight'}, {'id': 't_asset_quantity', 'name': 'Quantity'}]
+                  {'id': 't_asset_weight', 'name': 'Gewicht'}, {'id': 't_asset_quantity', 'name': 'Anzahl'}]
 
     tabs = html.Div([
         dbc.Tabs([
@@ -220,7 +220,7 @@ def create_app(app):
             create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%',
                             True))
     isin_tuples = extract_isin_tuples()
-    category_divs.append(create_dropdown('Zusätzliche Isins', isin_tuples, '50%', True))
+    category_divs.append(create_dropdown('Zusätzliche ISINs', isin_tuples, '50%', True))
 
     optimization_divs_dropdown = []
     optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '40%', False))
@@ -251,7 +251,7 @@ def create_app(app):
             html.H3('Optimierung'),
             html.Div(optimization_divs_dropdown),
             html.Div(optimization_divs_input),
-            create_button('Optimize')],
+            create_button('Optimize', 'Optimiere')],
             style=inner_style
         ),
         html.Div(
@@ -315,7 +315,8 @@ def get_isins_from_filters(categories, extra_isins, session) -> List[str]:
     [Input('Optimize Button', 'n_clicks')],
     state=[State(((cat_type.replace(' ', '')).lower()).capitalize() + ' Dropdown', 'value') for cat_type in
            category_types] +
-          [State('Zusätzliche Isins Dropdown', 'value'), State('Methode Dropdown', 'value'), State('Betrag Input Field', 'value'),
+          [State('Zusätzliche ISINs Dropdown', 'value'), State('Methode Dropdown', 'value'),
+           State('Betrag Input Field', 'value'),
            State('Risikofreier Zinssatz Input Field', 'value'), State('Cutoff Input Field', 'value')],
     prevent_initial_call=True
 )
