@@ -1,14 +1,15 @@
+import datetime
+from typing import List
+
 import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
-import datetime
 import pandas as pd
 import plotly.express as px
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
-from typing import List
 
 from db import Session, sql_engine
 from db.models import Etf, EtfCategory, IsinCategory
@@ -55,7 +56,8 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
         html.Label(dropdown_id + ':'),
         dcc.Dropdown(
             id=dropdown_id + ' Dropdown',
-            options=[{'value': data_id, 'label': data_name} for data_id, data_name in sorted(dropdown_data, key=lambda x: x[1])],
+            options=[{'value': data_id, 'label': data_name} for data_id, data_name in
+                     sorted(dropdown_data, key=lambda x: x[1])],
             placeholder=dropdown_id,
             searchable=True,
             clearable=True,
@@ -63,22 +65,27 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
         ),
     ],
         id=dropdown_id + ' Dropdown Div',
-        style={'width': width, 'display': 'inline-block', 'padding': 10},)
+        style={'width': width, 'display': 'inline-block',
+               'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25, 'padding-right': 25}, )
 
     return dropdown
 
 
-def create_input_field(input_id, input_data, width, input_type):
+def create_input_field(input_id, input_data, width, input_type, min=None, max=None, step=None):
     input_field = html.Div([
         html.Label(input_data + ':'),
         dbc.Input(
             id=input_id + ' Input Field',
             placeholder=input_data,
-            type=input_type
+            type=input_type,
+            min=min,
+            max=max,
+            step=None,
         ),
     ],
-    id = input_id + ' Input Field Div',
-    style={'width': width, 'display': 'inline-block', 'padding': 10})
+        id=input_id + ' Input Field Div',
+        style={'width': width, 'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+               'padding-right': 25})
 
     return input_field
 
@@ -92,7 +99,8 @@ def create_button(button_id):
             n_clicks=0)
     ],
         id=button_id + ' Button Div',
-        style={'display': 'inline-block', 'padding': 10})
+        style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+               'padding-right': 25})
 
     return button
 
@@ -114,14 +122,16 @@ def create_perf_row(perf_row_id, perf_row_data, perf_row_text):
 
 
 def create_performance_info():
-    performance_info = html.Center(html.Div([
+    performance_info = html.Div([
         html.H3('Portfolio Performance'),
-        create_perf_row("er", "", "Erwartete jährliche Rendite: "),
-        create_perf_row("vol", "", "Jährliche Volatilität: "),
-        create_perf_row("ms", "", "Sharpe Ratio: "),
+        html.Div([
+            create_perf_row("er", "", "Erwartete jährliche Rendite: "),
+            create_perf_row("vol", "", "Jährliche Volatilität: "),
+            create_perf_row("ms", "", "Sharpe Ratio: "),
+        ], style={'padding-top': 20, 'padding-bottom': 20}),
     ],
         id="pp_info",
-        style={'width': '33.33%', 'display': 'inline-block', 'padding': 10}))
+        style={'width': '100%', 'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 50})
 
     return performance_info
 
@@ -138,6 +148,19 @@ def create_data_table(table_id, table_data, width):
                'margin-left': "1%", 'margin-right': "1%"}))
 
     return table
+
+
+def create_navbar():
+    navbar = dbc.NavbarSimple(
+        brand="ETF Portfolio Optimizer",
+        brand_href="#",
+        color="primary",
+        dark=True,
+        fluid=True,
+        sticky='top',
+    )
+
+    return navbar
 
 
 def create_figure(figure_id, width):
@@ -193,44 +216,51 @@ def create_app(app):
 
     category_divs = []
     for category_type in category_types:
-        category_divs.append(create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%', True))
+        category_divs.append(
+            create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%',
+                            True))
     isin_tuples = extract_isin_tuples()
     category_divs.append(create_dropdown('Zusätzliche Isins', isin_tuples, '50%', True))
 
-
     optimization_divs_dropdown = []
-    optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '33.33%', False))
+    optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '40%', False))
 
     optimization_divs_input = []
-    optimization_divs_input.append(create_input_field('Betrag', 'Betrag in Euro', '33.33%', 'text'))
-    optimization_divs_input.append(create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '33.33%', 'text'))
-    optimization_divs_input.append(create_input_field('Cutoff', 'Cutoff', '33.33%', 'text'))
-    optimization_divs_input.append(create_button('Optimize'))
+    optimization_divs_input.append(create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'number'))
+    optimization_divs_input.append(
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'number'))
+    optimization_divs_input.append(create_input_field('Cutoff', 'Cutoff', '20%', 'number'))
 
     output_divs = []
     output_divs.append(create_performance_info())
     output_divs.append(create_tabs())
 
+    inner_style = {'margin-top': "2.5%", 'margin-bottom': "2.5%", 'margin-left': "12.5%", 'margin-right': "12.5%",
+                   'width': '75%', 'display': 'inline-block'}
+
     app.layout = html.Div([
-        html.H1('ETF Portfolio Optimizer'),
-        html.Hr(),
-        html.H3('Kategorien'),
-        html.Div(
-            category_divs, style={'width': '100%', 'display': 'inline-block'}
+        create_navbar(),
+        html.Div([
+            html.Div(
+                [html.H3('Kategorien'), *category_divs], style=inner_style
+            )],
+            style={'background-color': '#f8f9fa'}
         ),
-        html.Hr(),
-        html.H3('Optimierung'),
-        html.Div(
-            optimization_divs_dropdown, style={'width': '100%', 'display': 'inline-block'}
+
+        html.Div([
+            html.H3('Optimierung'),
+            html.Div(optimization_divs_dropdown),
+            html.Div(optimization_divs_input),
+            create_button('Optimize')],
+            style=inner_style
         ),
         html.Div(
-            optimization_divs_input, style={'width': '100%', 'display': 'inline-block'}
+            html.Div(
+                output_divs, style=inner_style
+            ),
+            style={'background-color': '#f8f9fa'}
         ),
-        html.Hr(),
-        html.Div(
-            output_divs, style={'width': '100%', 'display': 'inline-block'}
-        ),
-    ], style={'width': '75%', 'display': 'inline-block', 'margin-top': "2.5%", 'margin-bottom': "2.5%", 'margin-left': "12.5%", 'margin-right': "12.5%"})
+    ], style={'width': '100%', 'display': 'inline-block'})
 
 
 def filter_by_category(isins, category):
