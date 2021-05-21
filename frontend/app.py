@@ -99,7 +99,7 @@ def create_button(button_id):
             n_clicks=0)
     ],
         id=button_id + ' Button Div',
-        style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+        style={'display': 'inline-block', 'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25,
                'padding-right': 25})
 
     return button
@@ -128,7 +128,7 @@ def create_performance_info():
             create_perf_row("er", "", "Erwartete jährliche Rendite: "),
             create_perf_row("vol", "", "Jährliche Volatilität: "),
             create_perf_row("ms", "", "Sharpe Ratio: "),
-        ], style={'padding-top': 20, 'padding-bottom': 20}),
+        ], style={'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25, 'padding-right': 25}),
     ],
         id="pp_info",
         style={'width': '100%', 'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 50})
@@ -372,5 +372,5 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 if __name__ == '__main__':
     create_table(sql_engine)
     create_app(app)
-    app.title = "Etf Portfolio Optimizer"
+    app.title = "ETF Portfolio Optimizer"
     app.run_server(debug=True)
