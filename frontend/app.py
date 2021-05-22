@@ -11,6 +11,7 @@ import plotly.express as px
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
 
+import config
 from db import Session, sql_engine
 from db.models import Etf, EtfCategory, IsinCategory
 from db.table_manager import create_table
@@ -19,7 +20,7 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash("ETF Portfolio Optimizer", external_stylesheets=[dbc.themes.FLATLY])
+app = dash.Dash("ETF Portfolio Optimizer")
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
 
@@ -61,6 +62,7 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
             placeholder=dropdown_id,
             searchable=True,
             clearable=True,
+            className="dash-bootstrap",
             multi=dropdown_multiple,
         ),
     ],
@@ -71,16 +73,14 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
     return dropdown
 
 
-def create_input_field(input_id, input_data, width, input_type, min=None, max=None, step=None):
+def create_input_field(input_id, input_data, width, input_type, config_key):
     input_field = html.Div([
         html.Label(input_data + ':'),
         dbc.Input(
             id=input_id + ' Input Field',
-            placeholder=input_data,
             type=input_type,
-            min=min,
-            max=max,
-            step=None,
+            value=config.get_value('optimizer-defaults', config_key),
+            valid=True,
         ),
     ],
         id=input_id + ' Input Field Div',
@@ -227,11 +227,11 @@ def create_app(app):
 
     optimization_divs_input = []
     optimization_divs_input.append(
-        create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'text'))
+        create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'text', 'total_portfolio_value'))
     optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'text'))
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'text', 'risk_free_rate'))
     optimization_divs_input.append(
-        create_input_field('Cutoff', 'Cutoff', '20%', 'text'))
+        create_input_field('Cutoff', 'Cutoff', '20%', 'text', 'cutoff'))
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -265,7 +265,7 @@ def create_app(app):
             ),
             style={'background-color': '#f8f9fa'}
         ),
-    ], style={'width': '100%', 'display': 'inline-block'})
+    ], style={'width': '100%', 'display': 'inline-block'}, className="dash-bootstrap")
 
 
 def filter_by_category(isins, category):
@@ -307,6 +307,35 @@ def get_isins_from_filters(categories, extra_isins, session) -> List[str]:
 
     return filtered_isins
 
+
+@app.callback(
+    [Output('Betrag Input Field', 'valid'),
+     Output('Risikofreier Zinssatz Input Field', 'valid'),
+     Output('Cutoff Input Field', 'valid'),
+     Output('Betrag Input Field', 'invalid'),
+     Output('Risikofreier Zinssatz Input Field', 'invalid'),
+     Output('Cutoff Input Field', 'invalid')],
+    [Input('Betrag Input Field', 'value'),
+     Input('Risikofreier Zinssatz Input Field', 'value'),
+     Input('Cutoff Input Field', 'value')]
+)
+def validate_number(betrag, zinssatz, cutoff):
+    values = [betrag, zinssatz, cutoff]
+    res = [None, None, None, None, None, None]
+    for i in range(0, len(values)):
+        if values[i]:
+            try:
+                if i >= 1:
+                    float(values[i])
+                else:
+                    int(values[i])
+                res[i] = True
+                res[i + 3] = False
+            except ValueError:
+                res[i] = False
+                res[i + 3] = True
+
+    return res
 
 @app.callback(
     [Output('pp_er_value', 'children'),
