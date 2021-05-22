@@ -99,7 +99,7 @@ def create_button(button_id, button_text):
             n_clicks=0)
     ],
         id=button_id + ' Button Div',
-        style={'display': 'inline-block', 'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25,
+        style={'display': 'block', 'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25,
                'padding-right': 25})
 
     return button
@@ -226,10 +226,12 @@ def create_app(app):
     optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '40%', False))
 
     optimization_divs_input = []
-    optimization_divs_input.append(create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'number'))
     optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'number'))
-    optimization_divs_input.append(create_input_field('Cutoff', 'Cutoff', '20%', 'number'))
+        create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'text'))
+    optimization_divs_input.append(
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'text'))
+    optimization_divs_input.append(
+        create_input_field('Cutoff', 'Cutoff', '20%', 'text'))
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -251,7 +253,10 @@ def create_app(app):
             html.H3('Optimierung'),
             html.Div(optimization_divs_dropdown),
             html.Div(optimization_divs_input),
-            create_button('Optimize', 'Optimiere')],
+            create_button('Optimize', 'Optimiere'),
+            html.Div(dbc.Alert(id='opt_error', is_open=False, fade=True, color='danger'),
+                     style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+                            'padding-right': 25})],
             style=inner_style
         ),
         html.Div(
@@ -311,20 +316,28 @@ def get_isins_from_filters(categories, extra_isins, session) -> List[str]:
      Output('all_table', 'data'),
      Output('all_pie_figure', 'figure'),
      Output('ef_figure', 'figure'),
-     Output('historical_figure', 'figure')],
+     Output('historical_figure', 'figure'),
+     Output('opt_error', 'children'),
+     Output('opt_error', 'is_open')],
     [Input('Optimize Button', 'n_clicks')],
     state=[State(((cat_type.replace(' ', '')).lower()).capitalize() + ' Dropdown', 'value') for cat_type in
            category_types] +
-          [State('Zusätzliche ISINs Dropdown', 'value'), State('Methode Dropdown', 'value'),
+          [State('Zusätzliche ISINs Dropdown', 'value'),
+           State('Methode Dropdown', 'value'),
            State('Betrag Input Field', 'value'),
-           State('Risikofreier Zinssatz Input Field', 'value'), State('Cutoff Input Field', 'value')],
+           State('Risikofreier Zinssatz Input Field', 'value'),
+           State('Cutoff Input Field', 'value')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
                   laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
-    show_nothing = [None, None, None,
-                    {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
-                    None, None, None, None]
+    show_error = ['', '', '',
+                  {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
+                  None, None, None, None, '', True]
+
+    if not betrag or not zinssatz or not cutoff:
+        show_error[-2] = 'Bitte alle Eingabefelder setzen (Investitionsbetrag, Cutoff, Zinssatz)'
+        return show_error
 
     # 1. Step: Retrieve matching ISINs from categories
     session = Session()
@@ -333,7 +346,9 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     isins = get_isins_from_filters(selected_categories, extra_isins, session)
     if not isins:
         session.close()
-        return show_nothing
+        show_error[-2] = 'Keine ISIN gefunden für die gegebenen Kategorien ' \
+                         'oder es wurde keine Kategorie ausgewählt'
+        return show_error
 
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
     now = datetime.datetime.now()
@@ -341,8 +356,9 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
     opt = PortfolioOptimizer(isins, now, three_years_ago, session)
     session.close()
-    if not opt.df:
-        return show_nothing
+    if opt.df.empty:
+        show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
+        return show_error
 
     # 3. Step: Prepare resulting values and bring them into a usable data format
     perf_values = map(str, opt.ef.portfolio_performance())
@@ -367,7 +383,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # TODO historical figure
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
-    return [*perf_values, show_tabs, dt_data, pp, ef_figure, None]
+    return [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
 
 
 if __name__ == '__main__':
