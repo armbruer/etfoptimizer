@@ -19,7 +19,6 @@ def create_if_not_exists():
         logging.debug("EtfOptimizer config already exists")
         return
 
-    # TODO add explanatory
     # TODO does this work with setup.py?
     config = configparser.ConfigParser()
     config.add_section('database-uri')
@@ -30,6 +29,7 @@ def create_if_not_exists():
 
     config.add_section('optimizer-defaults')
     opt_section = config['optimizer-defaults']
+    config.set('optimizer-defaults', '; defaults are displayed when first opening the optimizer', '')
     for k, v in opt_entries.items():
         opt_section[k] = v
 
