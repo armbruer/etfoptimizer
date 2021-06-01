@@ -10,6 +10,9 @@ config_file = Path(Path.cwd().parent, 'etfoptimizer.ini') if os.getcwd().find("f
 opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
 db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': 'postgres',
               'password': 'Y4w3T48qWSYqQGWRakoh', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
+#db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': 'postgres',
+              #'password': 'poIDPst42!gre', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
+
 
 config_cache = {}
 

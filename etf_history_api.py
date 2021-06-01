@@ -1,6 +1,6 @@
 import eikon as ek
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from eikon.data_grid import TR_Field
 from typing import List
 
@@ -25,17 +25,20 @@ def extract_isins() -> List[str]:
     return isins
 
 
+def get_skipped_isins() -> List[str]:
+    isins = extract_isins()
+
+    session = Session()
+    for isin in session.query(EtfHistory.isin).distinct():
+        isins.remove(isin._data[0])
+
+    return isins
+
+
 def write_history_value(isin, date, price, session):
     try:
         res: EtfHistory = session.query(EtfHistory).filter_by(isin=isin, datapoint_date=date).first()
-        if res is not None:
-            # allow re-imports of data, as nothing speaks against it, as this is useful in the following scenario:
-            # reuters has changed its history prices/revenue for some entries as they were wrong (very unlikely)
-            # but this way we have also covered this scenario
-            res.price = price
-
-            logging.warning(f"Overwriting history for ETF '{isin}'. Did you re-import this data?")
-        else:
+        if res is None:
             data = EtfHistory()
 
             data.isin = isin
@@ -45,23 +48,79 @@ def write_history_value(isin, date, price, session):
             session.add(data)
             session.commit()
     except:
-        logging.warning(f'Could not save data!')
+        logging.warning(f'Could not save data')
         session.rollback()
         raise
 
 
-if __name__ == '__main__':
+def get_timeseries():
     create_table(sql_engine)
-    session = Session()
-
     isins = extract_isins()
+
     for i in range(0, len(isins)):
-        data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'], parameters={'SDate': '20210201', 'EDate': '20210207', 'Frq': 'D'})
-        for value in data[0].values:
-            value_isin = value[0]
-            value_date = datetime.strptime(value[1][0:10], '%Y-%m-%d').date()
-            value_price = value[2]
+        session = Session()
+
+        try:
+            ric = ek.get_data(isins[i], ['TR.LipperRICCode'])[0].values[0][1]
+            if isinstance(ric, str):
+                today = (date.today()).strftime('%Y-%m-%d')
+                data = ek.get_timeseries(ric, fields=['TIMESTAMP', 'VALUE'], start_date='1990-01-01', end_date=today, interval='daily')
+                for j in range(0, len(data.values)):
+                    isin = isins[i]
+                    datapoint_date = data.axes[0][j].date()
+                    price = data.values[j][0]
+                    write_history_value(isin, datapoint_date, price, session)
+                    
+                print('Finished writing get_data values for ' + isins[i])
+            else:
+                logging.warning(f'No get_timeseries data available for ' + isins[i])
+
+        except KeyboardInterrupt:
+            session.rollback()
+            exit(0)
+        except:
+            session.rollback()
+            logging.warning(f'No get_timeseries data available for ' + isins[i])
+
+        session.close()
+
+
+def get_data():
+    create_table(sql_engine)
+    isins = get_skipped_isins()
+
+    for i in range(0, len(isins)):
+        session = Session()
+
+        try:
+            today = date.today().strftime('%Y%m%d')
+            data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'], parameters={'SDate': '19900101', 'EDate': today, 'Frq': 'D'})
+            for value in data[0].values:
+                insert = True
+                if isinstance(value[2], float):
+                    isin = isins[i]
+                    datapoint_date = datetime.strptime(value[1][0:10], '%Y-%m-%d').date()
+                    price = value[2]
+                else:
+                    insert = False
             
-            write_history_value(value_isin, value_date, value_price, session)
+                if insert:
+                    write_history_value(isin, datapoint_date, price, session)
+
+            print('Finished writing get_data values for ' + isins[i])
+
+        except KeyboardInterrupt:
+            session.rollback()
+            exit(0)
+        except:
+            session.rollback()
+            logging.warning(f'No get_data values available for ' + isins[i])
     
-    session.close()
+        session.close()
+
+
+if __name__ == '__main__':
+    print('Getting etf history...')
+    
+    #get_timeseries()
+    #get_data()
