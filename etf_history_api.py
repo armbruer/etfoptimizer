@@ -13,7 +13,7 @@ from db.table_manager import create_table
 ek.set_app_key('13977944d3544bdaac512a15754669286fecb2bb')
 
 
-def extract_isins() -> List[str]:
+def get_isins() -> List[str]:
     session = Session()
     isins_db = session.query(IsinCategory)
 
@@ -26,13 +26,24 @@ def extract_isins() -> List[str]:
 
 
 def get_skipped_isins() -> List[str]:
-    isins = extract_isins()
+    isins = get_isins()
 
     session = Session()
     for isin in session.query(EtfHistory.isin).distinct():
         isins.remove(isin._data[0])
 
     return isins
+
+
+def get_latest_date():
+    start_date = date(1990, 1, 1)
+
+    session = Session()
+    for datapoint_date in session.query(EtfHistory.datapoint_date).distinct():
+        if start_date < datapoint_date._data[0]:
+            start_date = datapoint_date._data[0]
+
+    return str(start_date)
 
 
 def write_history_value(isin, date, price, session):
@@ -53,9 +64,9 @@ def write_history_value(isin, date, price, session):
         raise
 
 
-def get_timeseries():
+def get_timeseries(start_date):
     create_table(sql_engine)
-    isins = extract_isins()
+    isins = get_isins()
 
     for i in range(0, len(isins)):
         session = Session()
@@ -64,7 +75,7 @@ def get_timeseries():
             ric = ek.get_data(isins[i], ['TR.LipperRICCode'])[0].values[0][1]
             if isinstance(ric, str):
                 today = (date.today()).strftime('%Y-%m-%d')
-                data = ek.get_timeseries(ric, fields=['TIMESTAMP', 'VALUE'], start_date='1990-01-01', end_date=today, interval='daily')
+                data = ek.get_timeseries(ric, fields=['TIMESTAMP', 'VALUE'], start_date=start_date, end_date=today, interval='daily')
                 for j in range(0, len(data.values)):
                     isin = isins[i]
                     datapoint_date = data.axes[0][j].date()
@@ -85,7 +96,7 @@ def get_timeseries():
         session.close()
 
 
-def get_data():
+def get_data(start_date):
     create_table(sql_engine)
     isins = get_skipped_isins()
 
@@ -94,7 +105,7 @@ def get_data():
 
         try:
             today = date.today().strftime('%Y%m%d')
-            data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'], parameters={'SDate': '19900101', 'EDate': today, 'Frq': 'D'})
+            data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'], parameters={'SDate': start_date, 'EDate': today, 'Frq': 'D'})
             for value in data[0].values:
                 insert = True
                 if isinstance(value[2], float):
@@ -122,5 +133,6 @@ def get_data():
 if __name__ == '__main__':
     print('Getting etf history...')
     
-    #get_timeseries()
-    #get_data()
+    start_date = get_latest_date()
+    #get_timeseries(start_date)
+    #get_data(start_date.replace('-', ''))
