@@ -20,7 +20,7 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash("ETF Portfolio Optimizer")
+app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
 
