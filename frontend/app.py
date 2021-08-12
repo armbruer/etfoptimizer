@@ -269,8 +269,9 @@ def create_app(app):
 
 
 def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
-    return session.query(IsinCategory.etf_isin).filter(
+    rows = session.query(IsinCategory.etf_isin).filter(
         IsinCategory.category_id.in_(categories) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
+    return [isin for (isin,) in rows]
 
 
 @app.callback(
