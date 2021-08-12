@@ -383,8 +383,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     now = datetime.datetime.now()
     three_years_ago = now - relativedelta(months=36)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
-    opt = PortfolioOptimizer(isins, now, three_years_ago, session)
-    session.close()
+    opt = PortfolioOptimizer(isins, three_years_ago, now, session)
     if opt.df.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
         return show_error
@@ -412,6 +411,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # TODO historical figure
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
+    session.close()
     return [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
 
 

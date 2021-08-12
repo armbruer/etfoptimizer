@@ -32,7 +32,7 @@ class PortfolioOptimizer:
     def calc_efficient_frontier(self):
         if self.df.empty:
             logging.warning(f"Could not optimize as there is no data matching parameters :(")
-            logging.warning("f{self}")
+            logging.warning(f"{self}")
             return
 
         mu = mean_historical_return(self.df)
