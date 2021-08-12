@@ -16,7 +16,6 @@ setup(
         'requests>=2.25.1,<2.26',
         'dash>=1.20.0,<1.21',
         'dash-bootstrap-components>=0.12.0,<0.13',
-        'mock-alchemy>=0.2.1,<0.3',
         'PyPortfolioOpt',
         'pytest>=6.2.3,<6.3',
         'scikit-learn>=0.24.0,<0.25.0',
