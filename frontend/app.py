@@ -20,7 +20,7 @@ from optimizer import PortfolioOptimizer
 
 # TODO threads in dash? can we avoid multiple sessions?
 
-app = dash.Dash(__name__)
+app = dash.Dash("ETF")
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
 
@@ -268,44 +268,9 @@ def create_app(app):
     ], style={'width': '100%', 'display': 'inline-block'}, className="dash-bootstrap")
 
 
-def filter_by_category(isins, category):
-    if category is None:
-        return
-
-    isins_copy = isins.copy()
-    for isin in isins_copy.keys():
-        stays = False
-        for selection in category:
-            if selection in isins_copy[isin]:
-                stays = True
-
-        if not stays:
-            isins.pop(isin)
-
-
-def get_isins_from_filters(categories, extra_isins, session) -> List[str]:
-    isins_db = session.query(IsinCategory)
-
-    isins = dict()
-    for isin in isins_db:
-        if isin.etf_isin in isins:
-            isins[isin.etf_isin].append(isin.category_id)
-        else:
-            isins[isin.etf_isin] = [isin.category_id]
-
-    for category in categories:
-        filter_by_category(isins, category)
-
-    filtered_isins = list(isins.keys())
-
-    if extra_isins is None:
-        return filtered_isins
-
-    for isin in extra_isins:
-        if not isin in filtered_isins:
-            filtered_isins.append(isin)
-
-    return filtered_isins
+def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
+    return session.query(IsinCategory.etf_isin).filter(
+        IsinCategory.category_id.in_(categories) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
 
 
 @app.callback(
@@ -369,14 +334,19 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
         return show_error
 
     # 1. Step: Retrieve matching ISINs from categories
+    cats_list = [assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie, laufzeit,
+                 rating]
+    flattened_cats = flatten_categories(cats_list)
+    extra_isins = [] if not extra_isins else extra_isins  # prevent None type
+    if not extra_isins and not flattened_cats:
+        show_error[-2] = 'Bitte wähle zunächst mindestens eine Kategorie aus'
+        return show_error
+
     session = Session()
-    selected_categories = [assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie, laufzeit,
-                           rating]
-    isins = get_isins_from_filters(selected_categories, extra_isins, session)
+    isins = get_isins_from_filters(flattened_cats, extra_isins, session)
     if not isins:
         session.close()
-        show_error[-2] = 'Keine ISIN gefunden für die gegebenen Kategorien ' \
-                         'oder es wurde keine Kategorie ausgewählt'
+        show_error[-2] = 'Die Datenbank enthält keine ISIN für den ausgewählten Filter'
         return show_error
 
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
@@ -413,6 +383,14 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
     session.close()
     return [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
+
+
+def flatten_categories(cats_list):
+    flattened_cats = []
+    for cats in cats_list:
+        if cats:
+            flattened_cats.append(*cats)
+    return flattened_cats
 
 
 if __name__ == '__main__':
