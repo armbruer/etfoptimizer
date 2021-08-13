@@ -372,12 +372,13 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     perf_values = map(str, opt.ef.portfolio_performance())
     weights = [(k, v) for k, v in opt.ef.clean_weights(rounding=3).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
-    res = pd.concat([etf_names, etf_weights], axis=1, join="inner")
+    res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
 
     alloc, leftover = opt.allocated_portfolio(betrag)  # TODO show leftover
     alloc = [(k, v) for k, v in alloc.items()]
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
-    res = pd.concat([res, etf_quantities], axis=1, join="inner")
+    res = res.join(etf_quantities.set_index('isin'))
+    res = res.reset_index()
 
     # 4. Step: Show allocation results via different visuals
     pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
