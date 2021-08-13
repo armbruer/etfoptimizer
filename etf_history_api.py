@@ -8,7 +8,7 @@ from db import Session, sql_engine
 from db.models import EtfHistory, IsinCategory
 from db.table_manager import create_table
 
-# TODO: Include key in settings
+# TODO: Include app_key in settings
 
 ek.set_app_key('13977944d3544bdaac512a15754669286fecb2bb')
 
@@ -130,9 +130,9 @@ def get_data(start_date):
         session.close()
 
 
-if __name__ == '__main__':
+def save_history_api():
     print('Getting etf history...')
     
-    start_date = get_latest_date()
+    #start_date = get_latest_date()
     #get_timeseries(start_date)
     #get_data(start_date.replace('-', ''))

@@ -10,7 +10,7 @@ from db.models import EtfHistory
 from db.table_manager import create_table
 
 
-def save_history(historypath, isinpath):
+def save_history_excel(historypath, isinpath):
     create_table(sql_engine)
     session = Session()
     write_history_to_db(historypath, isinpath, session)

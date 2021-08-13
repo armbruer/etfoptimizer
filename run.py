@@ -7,7 +7,8 @@ from scrapy.utils.project import get_project_settings
 
 from db import sql_engine
 from db.table_manager import drop_static_tables
-from etf_history_excel import save_history
+from etf_history_api import save_history_api
+from etf_history_excel import save_history_excel
 from extraetf import Extraetf
 from isin_extractor import extract_isins_from_db
 
@@ -89,9 +90,15 @@ def extract_isins(outfile):
 @click.option('--historyfile', '-h', default='etf_history.csv',
               help='csv file containing etf history (output from Refinitiv)')
 @click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
-def import_history(historyfile, isinfile):
-    """Extracts historic etf data from Refinitiv (Thomson Reuters)."""
-    save_history(historyfile, isinfile)
+def import_history_excel(historyfile, isinfile):
+    """Extracts historic etf data from Refinitiv (Thomson Reuters) with Excel."""
+    save_history_excel(historyfile, isinfile)
+
+
+@etfopt.command()
+def import_history_api():
+    """Extracts historic etf data from Refinitiv (Thomson Reuters) with the API."""
+    save_history_api()
 
 
 if __name__ == '__main__':
