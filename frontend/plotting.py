@@ -167,7 +167,7 @@ def plot_efficient_frontier(
         # TODO fonts, legend title, title?
     )
 
-    fig.show()  # TODO hover info
+    # TODO hover info
     return fig
 
 

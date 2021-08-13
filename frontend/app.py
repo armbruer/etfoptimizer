@@ -142,6 +142,7 @@ def create_data_table(table_id, table_data, width):
         dash_table.DataTable(
             id=table_id + '_table',
             columns=table_data,
+            style_cell={'textAlign': 'left'},
             sort_action="native"
         )
     ],
@@ -366,6 +367,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(months=36)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session)
+    session.close()
     if opt.df.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
         return show_error
@@ -389,16 +391,15 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 5. Step: Show allocation results via different visuals
     pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
                 title='Portfolio Allocation')
-    pp.show()
 
-    res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
-                        "quantity": "t_asset_quantity"})
+    res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
+                              "quantity": "t_asset_quantity"})
     dt_data = res.to_dict('records')
 
     # TODO historical figure
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
-    session.close()
-    return [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
+    # [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
+    return [*perf_values, None, dt_data, pp, ef_figure, None, '', False]
 
 
 def flatten_categories(cats_list):
