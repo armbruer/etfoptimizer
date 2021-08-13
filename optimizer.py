@@ -38,9 +38,8 @@ class PortfolioOptimizer:
         mu = mean_historical_return(self.df)
         S = CovarianceShrinkage(self.df).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
-        self.max_sharpe = self.ef.max_sharpe()
 
-    def allocated_portfolio(self, total_portfolio_value):
+    def allocated_portfolio(self, total_portfolio_value, max_sharpe):
         latest_prices = get_latest_prices(self.df)  # TODO greedy allocation?
-        da = DiscreteAllocation(self.max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
+        da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
         return da.lp_portfolio()

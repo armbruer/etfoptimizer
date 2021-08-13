@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.express as px
 from dash.dependencies import Input, Output, State
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import and_
 
 import config
 from db import Session, sql_engine
@@ -269,9 +270,10 @@ def create_app(app):
 
 
 def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
+    conds = [IsinCategory.category_id == cat for cat in categories]
     rows = session.query(IsinCategory.etf_isin).filter(
-        IsinCategory.category_id.in_(categories) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
-    return [isin for (isin,) in rows]
+        and_(*conds) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
+    return [isin for (isin,) in rows]  # convert list of tuples to list of atomics
 
 
 @app.callback(
@@ -356,7 +358,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     isins = get_isins_from_filters(flattened_cats, extra_isins, session)
     if not isins:
         session.close()
-        show_error[-2] = 'Die Datenbank enthält keine ISIN für den ausgewählten Filter'
+        show_error[-2] = 'Die Datenbank enthält keine ETFs für den ausgewählten Filter'
         return show_error
 
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
@@ -368,19 +370,23 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
         return show_error
 
-    # 3. Step: Prepare resulting values and bring them into a usable data format
+    # 3. Step: Plot efficient frontier before calculating max sharpe (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
+    ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
+    max_sharpe = opt.ef.max_sharpe()
+
+    # 4. Step: Prepare resulting values and bring them into a usable data format
     perf_values = map(str, opt.ef.portfolio_performance())
     weights = [(k, v) for k, v in opt.ef.clean_weights(rounding=3).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
 
-    alloc, leftover = opt.allocated_portfolio(betrag)  # TODO show leftover
+    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)  # TODO show leftover
     alloc = [(k, v) for k, v in alloc.items()]
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = res.join(etf_quantities.set_index('isin'))
     res = res.reset_index()
 
-    # 4. Step: Show allocation results via different visuals
+    # 5. Step: Show allocation results via different visuals
     pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
                 title='Portfolio Allocation')
     pp.show()
@@ -388,8 +394,6 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
                         "quantity": "t_asset_quantity"})
     dt_data = res.to_dict('records')
-
-    ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # TODO historical figure
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
