@@ -330,8 +330,17 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
                   {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
                   None, None, None, None, '', True]
 
+    # 0. Step: Check if inputs are valid
     if not betrag or not zinssatz or not cutoff:
         show_error[-2] = 'Bitte alle Eingabefelder setzen (Investitionsbetrag, Cutoff, Zinssatz)'
+        return show_error
+
+    try:
+        betrag = int(betrag)
+        cutoff = float(cutoff)  # TODO Make use of these values
+        zinssatz = float(zinssatz)
+    except ValueError:
+        show_error[-2] = 'Bitte verwende ein korrektes Zahlenformat in den rot markierten Feldern'
         return show_error
 
     # 1. Step: Retrieve matching ISINs from categories
@@ -361,12 +370,13 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # 3. Step: Prepare resulting values and bring them into a usable data format
     perf_values = map(str, opt.ef.portfolio_performance())
-    weights = opt.ef.clean_weights(rounding=3)
-    etf_weights = pd.DataFrame.from_records(list(weights), columns=['isin', 'weight'])
+    weights = [(k, v) for k, v in opt.ef.clean_weights(rounding=3).items()]
+    etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
     res = pd.concat([etf_names, etf_weights], axis=1, join="inner")
 
     alloc, leftover = opt.allocated_portfolio(betrag)  # TODO show leftover
-    etf_quantities = pd.DataFrame.from_records(list(alloc), columns=['isin', 'quantity'])
+    alloc = [(k, v) for k, v in alloc.items()]
+    etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = pd.concat([res, etf_quantities], axis=1, join="inner")
 
     # 4. Step: Show allocation results via different visuals

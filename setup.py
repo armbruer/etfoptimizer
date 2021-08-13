@@ -16,8 +16,8 @@ setup(
         'requests>=2.25.1,<2.26',
         'dash>=1.20.0,<1.21',
         'dash-bootstrap-components>=0.12.0,<0.13',
-        'PyPortfolioOpt',
-        'pytest>=6.2.3,<6.3',
+        'PyPortfolioOpt>=1.4.0,<1.5.0',
+        'cvxopt>=1.2.0,<1.3',  # is a missing dependency for PyPortfolioOpt
         'scikit-learn>=0.24.0,<0.25.0',
         'numpy>=1.18.0,<1.21.0',
         'plotly>=4.14.0,<4.15.0',
