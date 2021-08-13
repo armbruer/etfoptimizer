@@ -180,7 +180,7 @@ def create_figure(figure_id, width):
 
 def create_tabs():
     graph_data = [{'id': 't_asset_name', 'name': 'Name'}, {'id': 't_asset_isin', 'name': 'ISIN'},
-                  {'id': 't_asset_weight', 'name': 'Gewicht'}, {'id': 't_asset_quantity', 'name': 'Anzahl'}]
+                  {'id': 't_asset_weight', 'name': 'Gewicht (%)'}, {'id': 't_asset_quantity', 'name': 'Anzahl'}]
 
     tabs = html.Div([
         dbc.Tabs([
@@ -393,7 +393,6 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
                 title='Portfolio Allocation')
 
-
     relevant_isins = []
     money_distribution = {}
 
@@ -426,7 +425,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     hist_figure = px.line(prices, x=prices.datapoint_date, y=prices.price)
 
-
+    res['weight'] = res['weight'].map("{:.2%}".format)
     res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
                               "quantity": "t_asset_quantity"})
     dt_data = res.to_dict('records')
