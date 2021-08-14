@@ -378,11 +378,11 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 3. Step: Plot efficient frontier before calculating max sharpe
     # (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
-    max_sharpe = opt.ef.max_sharpe()
+    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
     perf_values = map(str, opt.ef.portfolio_performance())
-    weights = [(k, v) for k, v in opt.ef.clean_weights(rounding=3).items()]
+    weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
 
@@ -404,7 +404,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
 
 def fill_datatable(res):
-    res['weight'] = res['weight'].map("{:.2%}".format)
+    res['weight'] = res['weight'].map("{:.3%}".format)
     res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
                               "quantity": "t_asset_quantity"})
     dt_data = res.to_dict('records')
