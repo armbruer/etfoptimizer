@@ -8,12 +8,8 @@ config_file = Path(Path.cwd().parent, 'etfoptimizer.ini') if os.getcwd().find("f
     'etfoptimizer.ini')
 
 opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
-db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': 'postgres',
-              'password': 'Y4w3T48qWSYqQGWRakoh', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
-#db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': 'postgres',
-              #'password': 'poIDPst42!gre', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
-
-
+db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': '<username>',
+              'password': '<password>', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
 config_cache = {}
 
 
@@ -32,7 +28,7 @@ def create_if_not_exists():
 
     config.add_section('optimizer-defaults')
     opt_section = config['optimizer-defaults']
-    config.set('optimizer-defaults', '; defaults are displayed when first opening the optimizer', '')
+    config.set('optimizer-defaults', '; defaults are displayed when first opening the optimizer UI', '')
     for k, v in opt_entries.items():
         opt_section[k] = v
 
