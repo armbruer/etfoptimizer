@@ -177,7 +177,7 @@ class Extraetf():
             for cat_name, cat_type in categories:
                 self.save_item_category(cat_name, cat_type, isin)
 
-        except:  # todo better exception handling?
+        except:
             logging.warning(f"Could not save data for {result['isin']}!")
             self.session.rollback()
             raise
@@ -197,8 +197,7 @@ class Extraetf():
                 try:
                     self.session.add(ic)
                     self.session.commit()
-                except IntegrityError as ie:
-                    # TODO Improve error handling by checking for the expected message
+                except IntegrityError:
                     logging.warning(f"Could not insert category data for ETF with ISIN {isin} and category {cat_name} "
                                     f"as it already exists!")
                     self.session.rollback()

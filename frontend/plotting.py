@@ -52,7 +52,7 @@ def _plot_cla(cla, points, fig, show_assets):
             optimal_ret,
             name='Optimal',
             mode="markers",
-            marker=dict(size=50, color="red", symbol='x')  # TODO markersize in matplotlib was 100
+            marker=dict(size=50, color="red", symbol='x')
         )
     )
 
@@ -63,7 +63,7 @@ def _plot_cla(cla, points, fig, show_assets):
                 cla.expected_returns,
                 name='ETFs',
                 mode="markers",
-                marker=dict(size=10, color="black")  # TODO markersize in matplotlib was 30
+                marker=dict(size=10, color="black")
             )
         )
 
@@ -113,7 +113,7 @@ def _plot_ef(ef, ef_param, ef_param_range, fig: Figure, show_assets):
                 y=ef.expected_returns,
                 name='ETFs',
                 mode="markers",
-                marker=dict(size=10, color="black")  # TODO markersize in matplotlib was 30
+                marker=dict(size=10, color="black")
             )
         )
     return fig
@@ -175,14 +175,11 @@ def plot_simulated_portfolios(mu, S, fig, n_samples=10000):
     w = np.random.dirichlet(np.ones(len(mu)), n_samples)
     rets = w.dot(mu)
     stds = np.sqrt((w.T * (S @ w.T)).sum(axis=0))
-    sharpes = rets / stds
 
     fig.add_trace(
         go.Scatter(
             x=stds,
             y=rets,
-            # TODO c paramerter was set in matplotlib with sharpes
-            # marker_colorscale=plotly.colors.sequential.Viridis,
             marker=dict(size=50, reversescale=True, color=plotly.colors.sequential.Viridis, symbol='circle-dot')
         )
     )
