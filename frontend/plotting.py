@@ -162,8 +162,8 @@ def plot_efficient_frontier(
         raise NotImplementedError("Please pass EfficientFrontier or CLA object")
 
     fig.update_layout(
-        xaxis_title='Volatility',
-        yaxis_title='Return',
+        xaxis_title='Volatilität',
+        yaxis_title='Rendite',
         # TODO fonts, legend title, title?
     )
 

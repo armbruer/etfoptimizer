@@ -395,8 +395,9 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     res = res.reset_index()
 
     # 5. Step: Show allocation results via different visuals
-    pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
-                title='Portfolio Allocation')
+    renamed_res = res.rename(columns={"weight": "Gewicht", "name": "Name", "isin": "ISIN"})
+    pp = px.pie(renamed_res, values='Gewicht', names='Name', hover_name='Name', hover_data=['ISIN'],
+                title='Portfolio Allokation')
 
     hist_figure = fill_hist_figure(betrag, now, res, three_years_ago)
     dt_data = fill_datatable(res)
@@ -437,7 +438,8 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
     prices = prices.iloc[prices.shape[0] - days_all_available:, :]
     factor = betrag / prices.iloc[0]['price']
     prices['price'] = prices['price'].apply(lambda x: x * factor)
-    hist_figure = px.line(prices, x=prices.datapoint_date, y=prices.price)
+    prices = prices.rename(columns={"price": "Preis", "datapoint_date": "Datum"})
+    hist_figure = px.line(prices, x=prices['Datum'], y=prices['Preis'])
     return hist_figure
 
 
