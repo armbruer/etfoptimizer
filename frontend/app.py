@@ -20,14 +20,12 @@ from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
 from optimizer import PortfolioOptimizer
 
-# TODO threads in dash? can we avoid multiple sessions?
-
 app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
                   'Laufzeit', 'Rating']
 
 
-def extract_isin_tuples() -> List[str]:
+def extract_isin_tuples():
     session = Session()
     isins_db = session.query(IsinCategory)
 
@@ -264,11 +262,17 @@ def create_app(app):
         ),
         html.Div(
             html.Div(
-                output_divs, style=inner_style
+                html.Div(
+                    output_divs, style=inner_style
+                ),
+                style={'background-color': '#f8f9fa'},
             ),
-            style={'background-color': '#f8f9fa'}
-        ),
-    ], style={'width': '100%', 'display': 'inline-block'}, className="dash-bootstrap")
+            style={'display': 'none'},
+            id='show_output',
+        )
+    ],
+        style={'width': '100%', 'display': 'inline-block'},
+        className="dash-bootstrap")
 
 
 def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
@@ -308,7 +312,8 @@ def validate_number(betrag, zinssatz, cutoff):
     return res
 
 @app.callback(
-    [Output('pp_er_value', 'children'),
+    [Output('show_output', 'style'),
+     Output('pp_er_value', 'children'),
      Output('pp_vol_value', 'children'),
      Output('pp_ms_value', 'children'),
      Output('View Tabs', 'style'),
@@ -330,7 +335,7 @@ def validate_number(betrag, zinssatz, cutoff):
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
                   laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
-    show_error = ['', '', '',
+    show_error = [{'display': 'none'}, '', '', '',
                   {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
                   None, None, None, None, '', True]
 
@@ -398,7 +403,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
     # [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
-    return [*perf_values, None, dt_data, pp, ef_figure, hist_figure, '', False]
+    return [{'display': 'inline'}, *perf_values, None, dt_data, pp, ef_figure, hist_figure, '', False]
 
 
 def fill_datatable(res):
