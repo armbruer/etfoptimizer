@@ -393,46 +393,47 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     pp = px.pie(res, values='weight', names='name', hover_name='name', hover_data=['isin'],
                 title='Portfolio Allocation')
 
-    relevant_isins = []
-    money_distribution = {}
-
-    for _, row in res.iterrows():
-        if row['weight'] > 0:
-            relevant_isins.append(row['isin'])
-            money_distribution[row['isin']] = row['weight']
-
-    session = Session()
-    query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
-            .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
-            .filter(EtfHistory.isin.in_(relevant_isins)).statement
-    prices = pd.read_sql(query, session.bind)
-    session.close()
-
-    for isin in relevant_isins:
-        prices['price'] = np.where(prices['isin'] == isin,
-            prices['price'] * money_distribution[isin],
-            prices['price'])
-
-    days_all_available = min(prices['isin'].value_counts())
-
-    prices = prices.drop(columns='isin')
-    prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
-
-    prices = prices.iloc[prices.shape[0] - days_all_available: , :]
-
-    factor = betrag / prices.iloc[0]['price']
-    prices['price'] = prices['price'].apply(lambda x: x*factor)
-
-    hist_figure = px.line(prices, x=prices.datapoint_date, y=prices.price)
-
-    res['weight'] = res['weight'].map("{:.2%}".format)
-    res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
-                              "quantity": "t_asset_quantity"})
-    dt_data = res.to_dict('records')
+    hist_figure = fill_hist_figure(betrag, now, res, three_years_ago)
+    dt_data = fill_datatable(res)
 
     show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
     # [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
     return [*perf_values, None, dt_data, pp, ef_figure, hist_figure, '', False]
+
+
+def fill_datatable(res):
+    res['weight'] = res['weight'].map("{:.2%}".format)
+    res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
+                              "quantity": "t_asset_quantity"})
+    dt_data = res.to_dict('records')
+    return dt_data
+
+
+def fill_hist_figure(betrag, now, res, three_years_ago):
+    relevant_isins = []
+    money_distribution = {}
+    for _, row in res.iterrows():
+        if row['weight'] > 0:
+            relevant_isins.append(row['isin'])
+            money_distribution[row['isin']] = row['weight']
+    session = Session()
+    query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
+        .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
+        .filter(EtfHistory.isin.in_(relevant_isins)).statement
+    prices = pd.read_sql(query, session.bind)
+    session.close()
+    for isin in relevant_isins:
+        prices['price'] = np.where(prices['isin'] == isin,
+                                   prices['price'] * money_distribution[isin],
+                                   prices['price'])
+    days_all_available = min(prices['isin'].value_counts())
+    prices = prices.drop(columns='isin')
+    prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
+    prices = prices.iloc[prices.shape[0] - days_all_available:, :]
+    factor = betrag / prices.iloc[0]['price']
+    prices['price'] = prices['price'].apply(lambda x: x * factor)
+    hist_figure = px.line(prices, x=prices.datapoint_date, y=prices.price)
+    return hist_figure
 
 
 def flatten_categories(cats_list):
