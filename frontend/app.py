@@ -316,7 +316,6 @@ def validate_number(betrag, zinssatz, cutoff):
      Output('pp_er_value', 'children'),
      Output('pp_vol_value', 'children'),
      Output('pp_ms_value', 'children'),
-     Output('View Tabs', 'style'),
      Output('all_table', 'data'),
      Output('all_pie_figure', 'figure'),
      Output('ef_figure', 'figure'),
@@ -335,9 +334,7 @@ def validate_number(betrag, zinssatz, cutoff):
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
                   laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
-    show_error = [{'display': 'none'}, '', '', '',
-                  {'width': '100%', 'display': 'none', 'margin-top': "1%", 'margin-bottom': "1%"},
-                  None, None, None, None, '', True]
+    show_error = [{'display': 'none'}, '', '', '', None, None, None, None, '', True]
 
     # 0. Step: Check if inputs are valid
     if not betrag or not zinssatz or not cutoff:
@@ -378,7 +375,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
         return show_error
 
-    # 3. Step: Plot efficient frontier before calculating max sharpe (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
+    # 3. Step: Plot efficient frontier before calculating max sharpe
+    # (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
     max_sharpe = opt.ef.max_sharpe()
 
@@ -402,9 +400,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     hist_figure = fill_hist_figure(betrag, now, res, three_years_ago)
     dt_data = fill_datatable(res)
 
-    show_tabs = {'width': '100%', 'display': 'inline', 'margin-top': "1%", 'margin-bottom': "1%"},
-    # [*perf_values, show_tabs, dt_data, pp, ef_figure, None, '', False]
-    return [{'display': 'inline'}, *perf_values, None, dt_data, pp, ef_figure, hist_figure, '', False]
+    return [{'display': 'inline'}, *perf_values, dt_data, pp, ef_figure, hist_figure, '', False]
 
 
 def fill_datatable(res):
@@ -418,26 +414,31 @@ def fill_datatable(res):
 def fill_hist_figure(betrag, now, res, three_years_ago):
     relevant_isins = []
     money_distribution = {}
+
     for _, row in res.iterrows():
         if row['weight'] > 0:
             relevant_isins.append(row['isin'])
             money_distribution[row['isin']] = row['weight']
+
     session = Session()
     query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
         .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
         .filter(EtfHistory.isin.in_(relevant_isins)).statement
     prices = pd.read_sql(query, session.bind)
     session.close()
+
     for isin in relevant_isins:
         prices['price'] = np.where(prices['isin'] == isin,
                                    prices['price'] * money_distribution[isin],
                                    prices['price'])
+
     days_all_available = min(prices['isin'].value_counts())
     prices = prices.drop(columns='isin')
     prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
     prices = prices.iloc[prices.shape[0] - days_all_available:, :]
     factor = betrag / prices.iloc[0]['price']
     prices['price'] = prices['price'].apply(lambda x: x * factor)
+
     prices = prices.rename(columns={"price": "Preis", "datapoint_date": "Datum"})
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Preis'])
     return hist_figure
