@@ -334,7 +334,7 @@ def validate_number(betrag, zinssatz, cutoff):
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
                   laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
-    show_error = [{'display': 'none'}, '', '', '', None, None, None, None, '', True]
+    show_error = [{'display': 'none'}, '', '', '', None, {}, {}, {}, '', True]
 
     # 0. Step: Check if inputs are valid
     if not betrag or not zinssatz or not cutoff:
@@ -343,7 +343,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     try:
         betrag = int(betrag)
-        cutoff = float(cutoff)  # TODO Make use of these values
+        cutoff = float(cutoff)
         zinssatz = float(zinssatz)
     except ValueError:
         show_error[-2] = 'Bitte verwende ein korrektes Zahlenformat in den rot markierten Feldern'
