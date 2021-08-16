@@ -25,6 +25,9 @@ Dependencies
     * In Fedora there is one quirk: make sure you change `pg_hba.conf` as described in
       this [answer](https://support.plesk.com/hc/en-us/articles/360024041714-Unable-to-change-PostgreSQL-admin-password-or-log-in-to-PostgreSQL-on-Plesk-psql-FATAL-Ident-authentication-failed-for-user-postgres-)
     * Windows [setup guide](https://www.postgresqltutorial.com/install-postgresql/)
+* Refinitiv Workspace (required for the dynamic data)
+  You need to be logged in with your Refinitiv account in order to retrieve the data.
+    * Windows: [download](https://www.refinitiv.com/en/products/refinitiv-workspace/download-workspace)
 * On Linux: Ensure you have installed `de_DE` and `en_US` languages. 
   Not sure yet if and what is required on Windows.
   
@@ -39,7 +42,13 @@ Developer Installation
     * Always activate your virtual environment first (with `source ./venv/bin/activate`) then you can install
       the command line tool (including the changes you made) using `pip install --editable=.`
     * Now check if your installation succeeded by running `etfopt`. The output should show the help page of this tool.
-2. b) On Windows: TODO Ruben    
+2. b) On Windows:
+    * Change directory into project folder: `cd etfoptimizer`
+    * Set up a [virtual environment](https://docs.python.org/3/library/venv.html) with 
+      `python3 -m venv venv && venv\Scripts\activate.bat` and run `python3 -m pip install -U pip wheel setuptools`
+    * Always activate your virtual environment first (with `venv\Scripts\activate.bat`) then you can install
+      the command line tool (including the changes you made) using `pip install --editable=.`
+    * Now check if your installation succeeded by running `etfopt`. The output should show the help page of this tool.  
 
 User Installation
 =================
@@ -58,8 +67,11 @@ Post-Installation Setup (Required for Users and Developers)
 3. The database connection:
    Either navigate from the project working directory to `ÈTFOptimizer/settings.py` and change the `SQL_URI` parameter.
    The required format for this step is: `SQL_URI = 'postgresql+psycopg2://<user>:<password>:<port>/<database name>'`.
-   
+
    Or run directly `python3 run_crawlers.py setupdb` which will guide you though the database connection setup.
+4. Log in the Refinitiv Workspace and create an app key for the Eikon API. (A guide for this can be found at
+   https://developers.refinitiv.com/en/api-catalog/eikon/eikon-data-api/quick-start). Afterwards add the key to the 
+   `app_key` variable in `etfoptimizer.ini`. 
 
 Data retrieval
 ==============
@@ -74,7 +86,9 @@ Deleting the static data is only required if you wish to rerun crawlers, as ment
 prone to change over long times. Deleting does not hurt, if you run this for the first time, as no previous data is available. 
 Please answer each question with `y` in order to download all static data. This might take up to 15 minutes.
 
-TODO second step Ruben
+The dynamic data can be retrieved with either an Excel script or the API. However we strongly recommend using the latter of
+those options, which can be done by typing `python3 run.py import-history-api`. This will automatically write all available dynamic
+data to the database. In case this command has already been run, the new data will be added to the already existing data. 
 
 Packaging Instructions
 ======================

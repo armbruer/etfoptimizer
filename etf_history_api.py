@@ -24,6 +24,7 @@ def get_isins() -> List[str]:
     return isins
 
 
+# Identifies the ISINs for which no data is available with the get_timeseries function
 def get_skipped_isins() -> List[str]:
     isins = get_isins()
 
@@ -34,6 +35,7 @@ def get_skipped_isins() -> List[str]:
     return isins
 
 
+# Sets the start date to 01.01.1990 or the most recent date for which data has already been extracted
 def get_latest_date():
     start_date = date(1990, 1, 1)
 
@@ -45,6 +47,7 @@ def get_latest_date():
     return str(start_date)
 
 
+# Write the extracted values to the database
 def write_history_value(isin, date, price, session):
     try:
         res: EtfHistory = session.query(EtfHistory).filter_by(isin=isin, datapoint_date=date).first()
@@ -63,6 +66,8 @@ def write_history_value(isin, date, price, session):
         raise
 
 
+# Extracts historic price data with the get_timeseries function
+# The extracted data consists of timestamps and prices for all available ISINs from the start date to today
 def get_timeseries(start_date):
     create_table(sql_engine)
     isins = get_isins()
@@ -89,12 +94,15 @@ def get_timeseries(start_date):
             session.rollback()
             exit(0)
         except:
+            # For some ISINs no data is available with the get_timeseries function
             session.rollback()
             logging.warning(f'No get_timeseries data available for ' + isins[i])
 
         session.close()
 
 
+# Extracts historic price data with the get_data function
+# The extracted data consists of timestamps and prices for all available ISINs from the start date to today
 def get_data(start_date):
     create_table(sql_engine)
     isins = get_skipped_isins()
@@ -123,6 +131,7 @@ def get_data(start_date):
             session.rollback()
             exit(0)
         except:
+            # For some ISINs no data is available with the get_data function
             session.rollback()
             logging.warning(f'No get_data values available for ' + isins[i])
     

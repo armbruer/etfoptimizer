@@ -25,6 +25,8 @@ category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Se
                   'Laufzeit', 'Rating']
 
 
+# Extracts ISINs from the database
+# This is used for the additional ISINs dropdown
 def extract_isin_tuples():
     session = Session()
     isins_db = session.query(IsinCategory)
@@ -37,6 +39,8 @@ def extract_isin_tuples():
     return isins
 
 
+# Extracts categories from the database
+# This is used for the category dropdowns
 def extract_categories(category_types):
     session = Session()
     categories = session.query(EtfCategory)
@@ -52,6 +56,7 @@ def extract_categories(category_types):
     return extracted_categories
 
 
+# The following functions create different elements for the user interface
 def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
     dropdown = html.Div([
         html.Label(dropdown_id + ':'),
@@ -210,6 +215,7 @@ def create_tabs():
     return tabs
 
 
+# Combines the elements into the user interface
 def create_app(app):
     test_data_methods = [('1', 'Methode 1'), ('2', 'Methode 2'), ('3', 'Methode 3')]
 
@@ -275,6 +281,7 @@ def create_app(app):
         className="dash-bootstrap")
 
 
+# Get the ISINs for which the chosen filters apply
 def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
     conds = [IsinCategory.category_id == cat for cat in categories]
     rows = session.query(IsinCategory.etf_isin).filter(
@@ -412,6 +419,7 @@ def fill_datatable(res):
 
 
 def fill_hist_figure(betrag, now, res, three_years_ago):
+    # Only get the ISINs which are bought in the optimal strategy
     relevant_isins = []
     money_distribution = {}
 
@@ -420,6 +428,7 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
             relevant_isins.append(row['isin'])
             money_distribution[row['isin']] = row['weight']
 
+    # Get the price date of the past 3 years for those ISINs
     session = Session()
     query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
         .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
@@ -427,18 +436,23 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
     prices = pd.read_sql(query, session.bind)
     session.close()
 
+    # Adapt the numbers to the invested amount
     for isin in relevant_isins:
         prices['price'] = np.where(prices['isin'] == isin,
                                    prices['price'] * money_distribution[isin],
                                    prices['price'])
 
+    # Only consider the time during which data for all relevant ISINs is available
     days_all_available = min(prices['isin'].value_counts())
+
+    # Calculate the value of the investment over time
     prices = prices.drop(columns='isin')
     prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
     prices = prices.iloc[prices.shape[0] - days_all_available:, :]
     factor = betrag / prices.iloc[0]['price']
     prices['price'] = prices['price'].apply(lambda x: x * factor)
 
+    # Create the figure
     prices = prices.rename(columns={"price": "Preis", "datapoint_date": "Datum"})
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Preis'])
     return hist_figure

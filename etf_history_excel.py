@@ -17,6 +17,7 @@ def save_history_excel(historypath, isinpath):
     session.close()
 
 
+# Combines the ISIN and price data so they can be written to the database
 def write_history_to_db(historypath, isinpath, session):
     isin_dict = __get_isin_dict(isinpath)
     etf_history, header = __get_history_data(historypath)
@@ -31,6 +32,7 @@ def write_history_to_db(historypath, isinpath, session):
             __write_history_value(datapoint_date, isin, price, session)
 
 
+# Reads the ISINs for which data is extracted
 def __get_isin_dict(isinpath):
     isin_dict = {}
 
@@ -47,6 +49,7 @@ def __get_isin_dict(isinpath):
     return isin_dict
 
 
+# Reads the extraxted price data
 def __get_history_data(historypath):
     try:
         etf_history = pandas.read_csv(historypath, sep=';')
@@ -57,6 +60,7 @@ def __get_history_data(historypath):
     return etf_history, header
 
 
+# Write the extracted values to the database
 def __write_history_value(datapoint_date, isin, price, session):
     try:
         res: EtfHistory = session.query(EtfHistory).filter_by(isin=isin, datapoint_date=datapoint_date).first()
