@@ -10,6 +10,7 @@ config_file = Path(Path.cwd().parent, 'etfoptimizer.ini') if os.getcwd().find("f
 opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
 db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': '<username>',
               'password': '<password>', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
+hist_entries = {'app_key': '<key>'}
 config_cache = {}
 
 
@@ -22,7 +23,6 @@ def create_if_not_exists():
     config = configparser.ConfigParser()
     config.add_section('database-uri')
     db_section = config['database-uri']
-
     for k, v in db_entries.items():
         db_section[k] = v
 
@@ -31,6 +31,11 @@ def create_if_not_exists():
     config.set('optimizer-defaults', '; defaults are displayed when first opening the optimizer UI', '')
     for k, v in opt_entries.items():
         opt_section[k] = v
+
+    config.add_section('historic-data')
+    db_section = config['historic-data']
+    for k, v in hist_entries.items():
+        db_section[k] = v
 
     with open(config_file, 'w+') as configfile:
         config.write(configfile)
@@ -50,6 +55,9 @@ def read_config():
 
     for k, v in opt_entries.items():
         _add_to_cache(config, 'optimizer-defaults', k, v)
+
+    for k, v in hist_entries.items():
+        _add_to_cache(config, 'historic-data', k, v)
 
     logging.info("Loaded config successfully")
 

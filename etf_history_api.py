@@ -1,3 +1,4 @@
+import config
 import eikon as ek
 import logging
 from datetime import date, datetime, timedelta
@@ -8,9 +9,7 @@ from db import Session, sql_engine
 from db.models import EtfHistory, IsinCategory
 from db.table_manager import create_table
 
-# TODO: Include app_key in settings
-
-ek.set_app_key('13977944d3544bdaac512a15754669286fecb2bb')
+ek.set_app_key(config.get_value('historic-data', 'app_key'))
 
 
 def get_isins() -> List[str]:
@@ -133,6 +132,6 @@ def get_data(start_date):
 def save_history_api():
     print('Getting etf history...')
     
-    #start_date = get_latest_date()
-    #get_timeseries(start_date)
-    #get_data(start_date.replace('-', ''))
+    start_date = get_latest_date()
+    get_timeseries(start_date)
+    get_data(start_date.replace('-', ''))
