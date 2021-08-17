@@ -419,22 +419,26 @@ def fill_datatable(res):
 
 
 def fill_hist_figure(betrag, now, res, three_years_ago):
-    # Only get the ISINs which are bought in the optimal strategy
+    # Get the ISINs which are relevant for the optimal strategy
     relevant_isins = []
-    money_distribution = {}
-
+    relevant_isin_weights = {}
     for _, row in res.iterrows():
         if row['weight'] > 0:
             relevant_isins.append(row['isin'])
-            money_distribution[row['isin']] = row['weight']
+            relevant_isin_weights[row['isin']] = row['weight']
 
-    # Get the price date of the past 3 years for those ISINs
+    # Get the prices of the past 3 years for those ISINs
     session = Session()
     query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
         .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
         .filter(EtfHistory.isin.in_(relevant_isins)).statement
     prices = pd.read_sql(query, session.bind)
     session.close()
+ 
+    # Consider the weights of the optimal strategy
+    money_distribution = {}
+    for isin in relevant_isins:
+        money_distribution[isin] = (betrag*relevant_isin_weights[isin]) / prices[prices['isin'] == isin].iloc[0]['price']
 
     # Adapt the numbers to the invested amount
     for isin in relevant_isins:
@@ -442,19 +446,15 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
                                    prices['price'] * money_distribution[isin],
                                    prices['price'])
 
-    # Only consider the time during which data for all relevant ISINs is available
-    days_all_available = min(prices['isin'].value_counts())
-
     # Calculate the value of the investment over time
+    days_all_available = min(prices['isin'].value_counts())
     prices = prices.drop(columns='isin')
     prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
     prices = prices.iloc[prices.shape[0] - days_all_available:, :]
-    factor = betrag / prices.iloc[0]['price']
-    prices['price'] = prices['price'].apply(lambda x: x * factor)
 
     # Create the figure
-    prices = prices.rename(columns={"price": "Preis", "datapoint_date": "Datum"})
-    hist_figure = px.line(prices, x=prices['Datum'], y=prices['Preis'])
+    prices = prices.rename(columns={"price": "Wert", "datapoint_date": "Datum"})
+    hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure
 
 
