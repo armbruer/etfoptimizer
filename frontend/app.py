@@ -78,9 +78,32 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
     return dropdown
 
 
-def create_input_field(input_id, input_data, width, input_type, config_key):
+def create_dropdown_tool_tip(dropdown_id, dropdown_data, tool_tip, width, dropdown_multiple):
+    dropdown = html.Div([
+        html.Label(dropdown_id + ':', style={'padding-right': 5}),
+        html.Abbr("\u003F", title=tool_tip),
+        dcc.Dropdown(
+            id=dropdown_id + ' Dropdown',
+            options=[{'value': data_id, 'label': data_name} for data_id, data_name in
+                     sorted(dropdown_data, key=lambda x: x[1])],
+            placeholder=dropdown_id,
+            searchable=True,
+            clearable=True,
+            className="dash-bootstrap",
+            multi=dropdown_multiple,
+        ),
+    ],
+        id=dropdown_id + ' Dropdown Div',
+        style={'width': width, 'display': 'inline-block',
+               'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25, 'padding-right': 25}, )
+
+    return dropdown
+
+
+def create_input_field(input_id, input_data, tool_tip, width, input_type, config_key):
     input_field = html.Div([
-        html.Label(input_data + ':'),
+        html.Label(input_data + ':', style={'padding-right': 5}),
+        html.Abbr("\u003F", title=tool_tip),
         dbc.Input(
             id=input_id + ' Input Field',
             type=input_type,
@@ -227,18 +250,19 @@ def create_app(app):
             create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%',
                             True))
     isin_tuples = extract_isin_tuples()
-    category_divs.append(create_dropdown('Zusätzliche ISINs', isin_tuples, '50%', True))
+    category_divs.append(create_dropdown_tool_tip('Zusätzliche ISINs', isin_tuples, ('ISINs welche zusätzlich und unabhängig von den ausgewählten Kategorien verwendet werden sollen.\n'
+    'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
 
     optimization_divs_dropdown = []
-    optimization_divs_dropdown.append(create_dropdown('Methode', test_data_methods, '40%', False))
+    optimization_divs_dropdown.append(create_dropdown_tool_tip('Methode', test_data_methods, 'Zu verwendende Optimierungsmethode.', '40%', False))
 
     optimization_divs_input = []
     optimization_divs_input.append(
-        create_input_field('Betrag', 'Investitionsbetrag (€)', '20%', 'text', 'total_portfolio_value'))
+        create_input_field('Betrag', 'Investitionsbetrag (€)', 'Investitionsbetrag in Euro.', '20%', 'text', 'total_portfolio_value'))
     optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', '20%', 'text', 'risk_free_rate'))
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Theoretische Rendite einer Anlage ohne Risiko.', '20%', 'text', 'risk_free_rate'))
     optimization_divs_input.append(
-        create_input_field('Cutoff', 'Cutoff', '20%', 'text', 'cutoff'))
+        create_input_field('Cutoff', 'Cutoff', 'Mindestrendite einer Anlage.', '20%', 'text', 'cutoff'))
 
     output_divs = []
     output_divs.append(create_performance_info())
