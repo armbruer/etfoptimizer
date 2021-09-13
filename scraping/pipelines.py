@@ -23,6 +23,9 @@ class EtfPipeline:
         self.session.close()
 
     def process_item(self, item, spider):
+        """
+        Converts each extracted item from a scrapy item into an sqlalchemy item, then stores it in the database.
+        """
         etf = item.to_etfitemdb()
         logging.info(f"Preparing to save {etf.name} in database")
 

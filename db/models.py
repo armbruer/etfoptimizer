@@ -5,7 +5,7 @@ from db.table_manager import Base
 
 class Etf(Base):
     """
-    Describes the columns of the etf table.
+    The table stores for each ETF a number of data fields.
     """
     __tablename__ = 'etf'
 
@@ -80,7 +80,7 @@ class Etf(Base):
 
 class EtfCategory(Base):
     """
-    Describes ETF categories.
+    The table stores all the known categories
     """
     __tablename__ = 'category'
 
@@ -90,6 +90,9 @@ class EtfCategory(Base):
 
 
 class IsinCategory(Base):
+    """
+    The table assigns each ISIN one or many categories.
+    """
     __tablename__ = 'isin_category'
 
     etf_isin = Column(String, ForeignKey('etf.isin'), primary_key=True)
@@ -97,6 +100,9 @@ class IsinCategory(Base):
 
 
 class EtfHistory(Base):
+    """
+    The table stores for each ETF its price history
+    """
     __tablename__ = 'etf_history'
 
     isin = Column(String, primary_key=True)

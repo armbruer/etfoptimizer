@@ -1,4 +1,3 @@
-import logging
 import os
 
 import pandas as pd
@@ -9,6 +8,9 @@ from db.models import Etf
 
 
 def extract_isins_from_db(out_file):
+    """
+    Retrieves all ISINs currently saved in database and writes them into an excel sheet
+    """
     session = Session()
     df_isins = pd.read_sql(session.query(Etf).statement, session.bind)
     session.close()
@@ -29,4 +31,3 @@ def extract_isins_from_db(out_file):
     df_isins.to_excel(writer, sheet_name='isins')
     writer.save()
     writer.close()
-    logging.info(f"Wrote ISINs into {out_file}")

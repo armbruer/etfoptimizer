@@ -57,14 +57,18 @@ def etfopt():
 
 @etfopt.command()
 def drop_static_data():
-    """Deletes tables holding static ETF data."""
+    """
+    Deletes tables holding static ETF data
+    """
     drop_static_tables(sql_engine)
     click.echo('Successfully dropped tables')
 
 
 @etfopt.command()
 def crawl_extraetf():
-    """Runs the extraetf crawler."""
+    """
+    Runs a crawler for retrieving data from extraetf.com
+    """
     extraetf = Extraetf()
     # TODO fix no logging output...
     extraetf.collect_data()
@@ -74,7 +78,9 @@ def crawl_extraetf():
 
 @etfopt.command()
 def crawl_justetf():
-    """Runs the justetf crawler."""
+    """
+    Runs a crawler for retrieving data from justetf.com
+    """
     try:
         run_crawler('justetf')
         click.echo('Finished crawling the justetf.com website')
@@ -86,8 +92,11 @@ def crawl_justetf():
 @etfopt.command()
 @click.option('--outfile', '-o', default='extracted_isins.xlsx', help='output file for extracted isins')
 def extract_isins(outfile):
-    """Extracts all ISINS from db to a csv file."""
+    """
+    Extracts all ISINS from db to a csv file
+    """
     extract_isins_from_db(outfile)
+    click.echo(f"Wrote ISINs into {outfile}")
 
 
 @etfopt.command()
@@ -95,20 +104,30 @@ def extract_isins(outfile):
               help='csv file containing etf history (output from Refinitiv)')
 @click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
 def import_history_excel(historyfile, isinfile):
-    """Extracts historic etf data from Refinitiv (Thomson Reuters) with Excel."""
+    """
+    Retrieves historic etf data from Refinitiv (Excel)
+    """
+    click.echo("Getting etf history...")
     save_history_excel(historyfile, isinfile)
+    click.echo('Finished retrieving etf history')
 
 
 @etfopt.command()
 def import_history_api():
-    """Extracts historic etf data from Refinitiv (Thomson Reuters) with the API."""
+    """
+    Retrieves historic etf data from Refinitiv (API)
+    """
+    click.echo("Getting etf history...")
     save_history_api()
+    click.echo('Finished retrieving etf history')
 
 
 @etfopt.command()
 @click.option('--file', '-f', default='backup.sql', help='path to database import file')
 def import_db(file):
-    """Imports the etf database from a file"""
+    """
+    Imports the etf database from a file
+    """
     filepath = os.path.realpath(file)
     if not os.path.isfile(file):
         click.echo(f"Importing failed: could not find the file {filepath}")
@@ -135,7 +154,9 @@ def import_db(file):
 
 @etfopt.command()
 def export_db():
-    """Exports the etf database into a file"""
+    """
+    Exports the etf database into a file
+    """
     filepath = 'backup.sql'
     result = ''
 

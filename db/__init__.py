@@ -8,6 +8,8 @@ from sqlalchemy_utils import database_exists, create_database
 
 import config
 
+# Create and load the config at startup
+# Connect to the SQL database
 Base = declarative_base()
 config.create_if_not_exists()
 config.read_config()
@@ -16,6 +18,12 @@ uri = config.get_sql_uri()
 if uri is None:
     click.echo(
         "Could not read sql uri from etfoptimizer.ini. Please set the values in the database-uri section accordingly.")
+    sys.exit(1)
+
+if config.get_value('database-uri', 'username') == "<username>" or config.get_value('database-uri',
+                                                                                    'password') == "<password>":
+    click.echo("""Please make sure to configure your database connection in etfoptimizer.ini first.
+    At minimum you need to replace values of the format <...> with the expected values.""")
     sys.exit(1)
 
 sql_engine = create_engine(uri)

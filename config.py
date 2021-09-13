@@ -15,6 +15,9 @@ config_cache = {}
 
 
 def create_if_not_exists():
+    """
+    Creates the config file if it does not already exist and populates the file with default values
+    """
     if os.path.isfile(config_file):
         logging.debug("EtfOptimizer config already exists")
         return
@@ -34,6 +37,7 @@ def create_if_not_exists():
 
     config.add_section('historic-data')
     db_section = config['historic-data']
+    config.set('historic-data', '; the Refinitiv API key used for retrieving historical price data', '')
     for k, v in hist_entries.items():
         db_section[k] = v
 
@@ -43,6 +47,9 @@ def create_if_not_exists():
 
 
 def read_config():
+    """
+    Reads all config entries and caches them.
+    """
     if config_cache:
         logging.info("EtfOptimizer config already loaded")
         return
@@ -51,26 +58,30 @@ def read_config():
     config.read(config_file)
 
     for k, v in db_entries.items():
-        _add_to_cache(config, 'database-uri', k, v)
+        __add_to_cache(config, 'database-uri', k, v)
 
     for k, v in opt_entries.items():
-        _add_to_cache(config, 'optimizer-defaults', k, v)
+        __add_to_cache(config, 'optimizer-defaults', k, v)
 
     for k, v in hist_entries.items():
-        _add_to_cache(config, 'historic-data', k, v)
+        __add_to_cache(config, 'historic-data', k, v)
 
     logging.info("Loaded config successfully")
 
 
-def _add_to_cache(config, sec, key, fallback):
-    config_cache[f'{sec}.{key}'] = config[sec].get(key, fallback)
-
-
 def get_value(section, key):
+    """
+    Retrieves a particular config value from cache at the given section and key
+    """
     return config_cache.get(f'{section}.{key}')
 
 
 def get_sql_uri(nodriver=False):
+    """
+    Returns the SQL URI string for connecting to the etf database.
+
+    The nodriver option can be used to retrieve the SQL URI string without the driver string.
+    """
     db_s = 'database-uri'
     dialect = get_value(db_s, 'dialect')
     driver = get_value(db_s, 'driver')
@@ -84,3 +95,10 @@ def get_sql_uri(nodriver=False):
         return f"{dialect}://{user}:{pw}@{host}:{port}/{db}"
     else:
         return f"{dialect}+{driver}://{user}:{pw}@{host}:{port}/{db}"
+
+
+def __add_to_cache(config, sec, key, fallback):
+    """
+    Stores a config value in cache
+    """
+    config_cache[f'{sec}.{key}'] = config[sec].get(key, fallback)

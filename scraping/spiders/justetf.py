@@ -11,6 +11,9 @@ from scraping.items import EtfItem, EtfItemLoader
 
 
 class JustetfSpider(scrapy.Spider):
+    """
+    Spider for crawling justetf.com
+    """
     name = 'justetf'
     allowed_domains = ['justetf.com']
     start_urls = ['https://justetf.com/de/find-etf.html']
@@ -69,7 +72,7 @@ class JustetfSpider(scrapy.Spider):
     @staticmethod
     def get_table_values(selector, table_size, path):
         """
-        Get the text contents of a table given the selector, table_size and an path.
+        Gets the text contents of a table given the selector, table_size and an path.
         """
         # xpath counting starts with one :/
         values = [selector.xpath('*[' + str(i) + ']' + path).get() for i in range(1, table_size + 1)]

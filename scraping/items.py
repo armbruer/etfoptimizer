@@ -15,7 +15,7 @@ from db.models import Etf
 
 def string_to_bool(x: str):
     """
-    Converts a string to a boolean.
+    Converts a German/English string to a boolean.
     """
     x = x.strip().lower()
     if x == 'ja' or x == 'yes':
@@ -88,7 +88,7 @@ def empty_to_none(x: str):
 class EtfItemLoader(ItemLoader):
     """
     The EtfItemLoader defines processors for converting parsed values into the correct datatype and
-    removing unwanted clutter from strings for etf data.
+    removing unwanted clutter from strings for storing etf data.
     """
 
     default_output_processor = TakeFirst()
@@ -106,6 +106,10 @@ class EtfItemLoader(ItemLoader):
 
 
 class EtfCategoryItemLoader(ItemLoader):
+    """
+    The EtfItemLoader defines processors for converting parsed values into the correct datatype and
+    removing unwanted clutter from strings for storing etf categories.
+    """
     default_output_processor = TakeFirst()
     isin_in = MapCompose(lambda x: x.replace(',', ''))
 
@@ -184,9 +188,12 @@ class EtfItem(Item):
     is_synthetic_replication = Field()
 
     def to_etfitemdb(self) -> Etf:
-        """Converts an EtfItem into a JustetfItem.
+        """
+        Converts an EtfItem into a JustetfItem.
+
         The purpose is to convert from a scrapy representation to an sqlalchemy representation of the same item,
-        so the item can be stored in a db"""
+        so the item can be stored in a db
+        """
 
         j = Etf()
         j.name = l2v(self, 'name')
