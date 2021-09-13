@@ -1,10 +1,14 @@
 import logging
+import os
+import subprocess
 import sys
 
 import click
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
+from sqlalchemy import MetaData
 
+import config
 from db import sql_engine
 from db.table_manager import drop_static_tables
 from etf_history_api import save_history_api
@@ -55,7 +59,7 @@ def etfopt():
 def drop_static_data():
     """Deletes tables holding static ETF data."""
     drop_static_tables(sql_engine)
-    click.echo('Successfully dropped tables.')
+    click.echo('Successfully dropped tables')
 
 
 @etfopt.command()
@@ -73,9 +77,9 @@ def crawl_justetf():
     """Runs the justetf crawler."""
     try:
         run_crawler('justetf')
-        click.echo('Finished crawling the justetf.com website.')
+        click.echo('Finished crawling the justetf.com website')
     except:
-        click.echo('Failed crawling the justetf.com website.')
+        click.echo('Failed crawling the justetf.com website')
         raise
 
 
@@ -99,6 +103,49 @@ def import_history_excel(historyfile, isinfile):
 def import_history_api():
     """Extracts historic etf data from Refinitiv (Thomson Reuters) with the API."""
     save_history_api()
+
+
+@etfopt.command()
+@click.option('--file', '-f', default='backup.sql', help='path to database import file')
+def import_db(file):
+    """Imports the etf database from a file"""
+    filepath = os.path.realpath(file)
+    if not os.path.isfile(file):
+        click.echo(f"Importing failed: could not find the file {filepath}")
+        return
+
+    result = ''
+    if click.confirm("Warning: This will delete all data prior to importing. Do you want to continue?"):
+        # drop all tables
+        meta = MetaData()
+        meta.bind = sql_engine
+        meta.reflect()
+        meta.drop_all()
+
+        try:
+            result = subprocess.check_output(
+                ['psql', '-d', config.get_sql_uri(nodriver=True), '-f', f'{filepath}'])
+            click.echo("Etf database was imported successfully")
+        except subprocess.CalledProcessError:
+            click.echo("Importing the etf database failed")
+        click.echo(result)
+    else:
+        click.echo("Import aborted")
+
+
+@etfopt.command()
+def export_db():
+    """Exports the etf database into a file"""
+    filepath = 'backup.sql'
+    result = ''
+
+    try:
+        result = subprocess.check_output(['pg_dump', '-d', config.get_sql_uri(nodriver=True), '-f', filepath])
+        click.echo(f"Etf database was exported successfully into the file '{os.getcwd()}/{filepath}'")
+    except subprocess.CalledProcessError:
+        click.echo("Exporting the etf database failed")
+
+    click.echo(result)
 
 
 if __name__ == '__main__':

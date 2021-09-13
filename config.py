@@ -70,7 +70,7 @@ def get_value(section, key):
     return config_cache.get(f'{section}.{key}')
 
 
-def get_sql_uri():
+def get_sql_uri(nodriver=False):
     db_s = 'database-uri'
     dialect = get_value(db_s, 'dialect')
     driver = get_value(db_s, 'driver')
@@ -80,4 +80,7 @@ def get_sql_uri():
     port = get_value(db_s, 'port')
     db = get_value(db_s, 'database')
 
-    return f"{dialect}+{driver}://{user}:{pw}@{host}:{port}/{db}"
+    if nodriver:
+        return f"{dialect}://{user}:{pw}@{host}:{port}/{db}"
+    else:
+        return f"{dialect}+{driver}://{user}:{pw}@{host}:{port}/{db}"
