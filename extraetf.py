@@ -11,8 +11,13 @@ from scraping.items import EtfItem, string_to_date
 
 
 class Extraetf():
+    """
+    This class extracts ETF data from extraetf.com via an undocumented API. As such an API is always subject to change
+    we must expect this implementation to work only for a limited amount of time.
+    """
 
     def __init__(self):
+        # the category names on extraetf.com
         self.category_types = {'sector_name': 'Sektor', 'land_name': 'Land', 'region_name': 'Region',
                                'asset_class_name': "Asset Klasse", 'strategy_name': 'Strategie',
                                'fund_currency_id': 'Währung',
@@ -37,7 +42,7 @@ class Extraetf():
             page = int(offset / limit + 1)
             results = data['results']
             logging.info(f"Extracted etfs from page {page}!")
-            self.parse_page(results)
+            self.__parse_page(results)
 
             if data['next'] is None:
                 break
@@ -46,21 +51,28 @@ class Extraetf():
 
         self.session.close()
 
-    def parse_page(self, results):
+    def __parse_page(self, results):
+        """
+        Parses and stores a page from extraetf.com and extracts the data from each detail page displayed on that page.
+        """
+
         for result in results:
             detail_params = {'isin': result['isin']}
             detail_response = requests.get('https://de.extraetf.com/api-v2/detail/', detail_params)
             detail_result = detail_response.json()['results'][0]
 
-            item = self.parse_item(result, detail_result)
-            item = self.process_item(item)
-            self.save_item(item)
+            item = self.__parse_item(result, detail_result)
+            item = self.__process_item(item)
+            self.__save_item(item)
 
             self.save_item_categories(result, detail_result)
 
             time.sleep(0.25)  # slow down to avoid getting banned :)
 
-    def parse_item(self, result, detail_result):
+    def __parse_item(self, result, detail_result):
+        """
+        Parses the data of one detail page, i.e. of one ETF
+        """
         item = EtfItem()
         for field in item.fields:
             item.setdefault(field, None)
@@ -123,18 +135,21 @@ class Extraetf():
 
         return item
 
-    def process_item(self, item):
+    def __process_item(self, item):
+        """
+        Converts the data of an item into appropriate formats if neccesary
+        """
         item['inception'] = string_to_date(item['inception'])
 
         return item
 
-    def save_item(self, item: EtfItem):
+    def __save_item(self, item: EtfItem):
         etf = item.to_etfitemdb()
         try:
             current_data: Etf = self.session.query(Etf).filter_by(isin=etf.isin).first()
             if current_data is not None:
                 logging.info(f"Updating existing ETF {current_data.isin}")
-                self.update_item(current_data, etf)
+                self.__update_item(current_data, etf)
 
             else:
                 self.session.add(etf)
@@ -144,7 +159,11 @@ class Extraetf():
             self.session.rollback()
             raise
 
-    def update_item(self, current_data, etf):
+    def __update_item(self, current_data, etf):
+        """
+        Overwrites certain ETF data from justetf if a particular ETF is included in both databases
+        """
+
         # we only update attributes that do not exist at justetf.com or are of higher precision at extraetf.com
         # higher precision
         current_data.fund_size = etf.fund_size
@@ -170,25 +189,32 @@ class Extraetf():
         self.session.commit()
 
     def save_item_categories(self, result, detail_result):
+        """
+        Saves the item category for each item
+        """
         isin = result['isin']
         categories = [(detail_result[cat_key], cat_type) for cat_key, cat_type in self.category_types.items()]
 
         try:
             for cat_name, cat_type in categories:
-                self.save_item_category(cat_name, cat_type, isin)
+                self.__save_item_category(cat_name, cat_type, isin)
 
         except:
             logging.warning(f"Could not save data for {result['isin']}!")
             self.session.rollback()
             raise
 
-    def save_item_category(self, cat_name, cat_type, isin):
+    def __save_item_category(self, cat_name, cat_type, isin):
+        """
+        Saves the category if it is a previously unknown category and associates a particular ISIN with that category in the database.
+        """
+
         if cat_name is not None and cat_name:
             if cat_name in self.cgry_cache:
                 # if category has already been added to db we can use the cache to retrieve its id
                 cat_id = self.cgry_cache[cat_name]
             else:
-                cat_id = self.add_category(cat_name, cat_type)
+                cat_id = self.__add_category(cat_name, cat_type)
             if cat_id:
                 ic = IsinCategory()
                 ic.etf_isin = isin
@@ -205,7 +231,10 @@ class Extraetf():
             else:
                 logging.error(f"No ID was found for item with category {cat_name}")
 
-    def add_category(self, cat_name, cat_type):
+    def __add_category(self, cat_name, cat_type):
+        """
+        Stores a new category in database
+        """
         etf_category = EtfCategory()
         etf_category.name = cat_name
         etf_category.type = cat_type

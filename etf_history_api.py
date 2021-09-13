@@ -16,14 +16,14 @@ def save_history_api():
     """
 
     start_date = get_latest_date()
-    get_timeseries(
-        start_date)  # TODO @Ruben warum zwei Funktionen um die Daten zu extrahieren, was unterscheidet diese Funktionen -> in die Kommentare schreiben
+    get_timeseries(start_date)
     get_data(start_date.replace('-', ''))
 
 
 def get_timeseries(start_date):
     """
     Extracts historic price data consisting of timestamps and prices for all available ISINs from the start date to today
+    For some ISINs no data is available with the get_timeseries function (weird API behaviour)
     """
     __set_app_key()
     create_table(sql_engine)
@@ -62,6 +62,7 @@ def get_timeseries(start_date):
 def get_data(start_date):
     """
     Extracts historic price data consisting of timestamps and prices for all available ISINs from the start date until today
+    For some ISINs no data is available with the get_timeseries function (weird API behaviour)
     """
     __set_app_key()
     create_table(sql_engine)
