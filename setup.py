@@ -2,28 +2,28 @@ from setuptools import setup, find_packages
 
 setup(
     name='etfoptimizer',
-    version='0.1',
+    version='0.1.0',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'Click>=7.1.2,<7.2',
+        'Click>=8.0.1,<8.1',
         'scrapy>=2.5.0,<2.6',
-        'selenium>=3.141.0',
-        'psycopg2>=2.8.6,<2.9',
-        'SQLAlchemy>=1.4.9,<1.5',
+        'selenium>=3.141.0', # TODO selenium version
+        'psycopg2>=2.9.1,<2.10',
+        'SQLAlchemy>=1.4.23,<1.5',
         'sqlalchemy-utils>=0.37,<0.38',
-        'pandas>=1.2.4,<1.3',
-        'requests>=2.25.1,<2.26',
-        'dash>=1.20.0,<1.21',
+        'pandas>=1.3.3,<1.4',
+        'requests>=2.26,<2.27',
+        'dash>=1.21,<2.0', # TODO update this
         'dash-bootstrap-components>=0.12.0,<0.13',
-        'PyPortfolioOpt>=1.4.0,<1.5.0',
-        'cvxopt>=1.2.0,<1.3',  # is a missing dependency for PyPortfolioOpt
+        'PyPortfolioOpt>=1.4.1,<1.5.0',
+        'cvxopt>=1.2.0,<1.3',  # TODO try a different solver
         'scikit-learn>=0.24.0,<0.25.0',
-        'numpy>=1.18.0,<1.21.0',
-        'plotly>=4.14.0,<4.15.0',
-        'openpyxl>=3.0.2,<3.1.0',
-        'python-dateutil>=2.8.0,<2.9.0',
-        'eikon>=1.1.0,<1.2'
+        'numpy>=1.21.2,<1.22',
+        'plotly>=5.3.1,<5.4',
+        'openpyxl>=3.0.8,<3.1.0',
+        'python-dateutil>=2.8.2,<2.9.0',
+        'eikon>=1.1.12,<1.2'
     ],
     entry_points='''
         [console_scripts]
