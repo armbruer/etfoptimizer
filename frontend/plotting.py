@@ -39,9 +39,10 @@ def _plot_cla(cla, points, fig, show_assets):
     mus, sigmas, _ = cla.frontier_values
 
     fig.add_trace(
-        go.Line(
+        go.Scatter(
             x=sigmas,
             y=mus,
+            mode='lines',
             name='Efficient Frontier',
         )
     )
@@ -99,9 +100,10 @@ def _plot_ef(ef, ef_param, ef_param_range, fig: Figure, show_assets):
         sigmas.append(sigma)
 
     fig.add_trace(
-        go.Line(
+        go.Scatter(
             x=sigmas,
             y=mus,
+            mode='lines',
             name='Efficient Frontier',
         )
     )
