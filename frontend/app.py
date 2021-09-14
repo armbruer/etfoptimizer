@@ -399,8 +399,10 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
     now = datetime.datetime.now()
     three_years_ago = now - relativedelta(months=36)
+    six_years_ago = now - relativedelta(months=72)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session)
+    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session)
     session.close()
     if opt.df.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
@@ -428,7 +430,15 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     pp = px.pie(renamed_res, values='Gewicht', names='Name', hover_name='Name', hover_data=['ISIN'],
                 title='Portfolio Allokation')
 
-    hist_figure = fill_hist_figure(betrag, now, res, three_years_ago)
+    try:
+        hist_figure = fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff)
+    except:
+        placeholder_list = [[three_years_ago, 0], [now, 0]]
+        placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
+        hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
+        hist_figure.update_layout(yaxis_range=[0,1])
+        hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper', yref='paper', x=0.5, y=0.5, showarrow=False)
+
     dt_data = fill_datatable(res)
 
     return [{'display': 'inline'}, *perf_values, dt_data, pp, ef_figure, hist_figure, '', False]
@@ -442,8 +452,20 @@ def fill_datatable(res):
     return dt_data
 
 
-def fill_hist_figure(betrag, now, res, three_years_ago):
-    # Get the ISINs which are relevant for the optimal strategy
+def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff):
+    max_sharpe = opt_hist.ef.max_sharpe(risk_free_rate=zinssatz)
+
+    weights = [(k, v) for k, v in opt_hist.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
+    etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
+    res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
+
+    alloc, leftover = opt_hist.allocated_portfolio(betrag, max_sharpe)
+    alloc = [(k, v) for k, v in alloc.items()]
+    etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
+    res = res.join(etf_quantities.set_index('isin'))
+    res = res.reset_index()
+
+    # Get the relevant ISINs
     relevant_isins = []
     relevant_isin_weights = {}
     for _, row in res.iterrows():
@@ -451,7 +473,7 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
             relevant_isins.append(row['isin'])
             relevant_isin_weights[row['isin']] = row['weight']
 
-    # Get the prices of the past 3 years for those ISINs
+    # Get the prices for the relevant ISINs
     session = Session()
     query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
         .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
@@ -464,19 +486,19 @@ def fill_hist_figure(betrag, now, res, three_years_ago):
     for isin in relevant_isins:
         money_distribution[isin] = (betrag*relevant_isin_weights[isin]) / prices[prices['isin'] == isin].iloc[0]['price']
 
-    # Adapt the numbers to the invested amount
+    # Consider the invested amount
     for isin in relevant_isins:
         prices['price'] = np.where(prices['isin'] == isin,
                                    prices['price'] * money_distribution[isin],
                                    prices['price'])
 
-    # Calculate the value of the investment over time
+    # Calculate the value of the investment
     days_all_available = min(prices['isin'].value_counts())
     prices = prices.drop(columns='isin')
     prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
     prices = prices.iloc[prices.shape[0] - days_all_available:, :]
 
-    # Create the figure
+    # Show the result
     prices = prices.rename(columns={"price": "Wert", "datapoint_date": "Datum"})
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure
