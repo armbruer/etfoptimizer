@@ -323,6 +323,19 @@ def create_app(app):
             html.H3('Optimierung'),
             html.Div(optimization_divs_dropdown),
             html.Div(optimization_divs_input),
+            html.Div(
+                [dcc.Checklist(
+                    id='Historic Performance Checklist',
+                    options=[{'label': ' Historische Performance berechnen ', 'value': 'CHP'}],
+                    value=[],
+                    style={'display': 'inline', 'padding-right': 5}
+                ),
+                html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
+                'Kann unter Umständen die Laufzeit verschlechtern.'),
+                ],
+                style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+                            'padding-right': 25}
+            ),
             create_button('Optimize', 'Optimiere'),
             html.Div(dbc.Alert(id='opt_error', is_open=False, fade=True, color='danger'),
                      style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
@@ -401,11 +414,12 @@ def validate_number(betrag, zinssatz, cutoff):
            State('Methode Dropdown', 'value'),
            State('Betrag Input Field', 'value'),
            State('Risikofreier Zinssatz Input Field', 'value'),
-           State('Cutoff Input Field', 'value')],
+           State('Cutoff Input Field', 'value'),
+           State('Historic Performance Checklist', 'value')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
-                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
+                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff, create_hist_perf):
     """
     Responsible for updating the UI when "Optimieren" button is pressed.
 
@@ -484,14 +498,21 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     pp = px.pie(renamed_res, values='Gewicht', names='Name', hover_name='Name', hover_data=['ISIN'],
                 title='Portfolio Allokation')
 
-    try:
-        hist_figure = fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff)
-    except:
+    hist_figure = None
+    if create_hist_perf:
+        try:
+            hist_figure = fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff)
+        except:
+            placeholder_list = [[three_years_ago, 0], [now, 0]]
+            placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
+            hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
+            hist_figure.update_layout(yaxis_range=[0,1])
+            hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper', yref='paper', x=0.5, y=0.5, showarrow=False)
+    else:
         placeholder_list = [[three_years_ago, 0], [now, 0]]
         placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
         hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
         hist_figure.update_layout(yaxis_range=[0,1])
-        hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper', yref='paper', x=0.5, y=0.5, showarrow=False)
 
     dt_data = fill_datatable(res)
 
