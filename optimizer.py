@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from db.models import EtfHistory
 
+
 @unique
 class Optimizer(Enum):
     """
@@ -35,7 +36,6 @@ class Optimizer(Enum):
             return Optimizer.EMA_VARIANCE
         else:
             raise ValueError(f"Unknown value for Optimizer enum: {optimizer}")
-
 
 
 @dataclass

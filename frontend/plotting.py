@@ -187,4 +187,3 @@ def plot_simulated_portfolios(mu, S, fig, n_samples=10000):
     )
 
     return fig
-

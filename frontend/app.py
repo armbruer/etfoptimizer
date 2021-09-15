@@ -163,7 +163,7 @@ def create_perf_row(perf_row_id, perf_row_data, perf_row_text):
         html.Div([
             perf_row_data
         ],
-            id='pp_' + perf_row_id + '_value',)
+            id='pp_' + perf_row_id + '_value', )
     ])
 
     return perf_row
@@ -289,19 +289,25 @@ def create_app(app):
             create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%',
                             True))
     isin_tuples = extract_isin_tuples()
-    category_divs.append(create_dropdown_tool_tip('Zusätzliche ISINs', isin_tuples, ('ISINs welche zusätzlich und unabhängig von den ausgewählten Kategorien verwendet werden sollen.\n'
-    'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
+    category_divs.append(create_dropdown_tool_tip('Zusätzliche ISINs', isin_tuples, (
+        'ISINs welche zusätzlich und unabhängig von den ausgewählten Kategorien verwendet werden sollen.\n'
+        'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
 
     optimization_divs_dropdown = []
     optimization_divs_dropdown.append(create_dropdown('Methode', optimizer_methods, '40%', False, 'Mittelwert/Varianz'))
 
     optimization_divs_input = []
     optimization_divs_input.append(
-        create_input_field('Betrag', 'Investitionsbetrag (€)', 'Der Gesamtbetrag in Euro der in einem Portfolio optimal angelegt werden soll.', '20%', 'text', 'total_portfolio_value'))
+        create_input_field('Betrag', 'Investitionsbetrag (€)',
+                           'Der Gesamtbetrag in Euro der in einem Portfolio optimal angelegt werden soll.', '20%',
+                           'text', 'total_portfolio_value'))
     optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Rendite einer Anlage ohne Risiko.', '20%', 'text', 'risk_free_rate'))
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Rendite einer Anlage ohne Risiko.', '20%',
+                           'text', 'risk_free_rate'))
     optimization_divs_input.append(
-        create_input_field('Cutoff', 'Cutoff', 'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)', '20%', 'text', 'cutoff'))
+        create_input_field('Cutoff', 'Cutoff',
+                           'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)',
+                           '20%', 'text', 'cutoff'))
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -330,11 +336,11 @@ def create_app(app):
                     value=[],
                     style={'display': 'inline', 'padding-right': 5}
                 ),
-                html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
-                'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
+                    html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
+                                              'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
                 ],
                 style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
-                            'padding-right': 25}
+                       'padding-right': 25}
             ),
             create_button('Optimize', 'Optimiere'),
             html.Div(dbc.Alert(id='opt_error', is_open=False, fade=True, color='danger'),
@@ -395,6 +401,7 @@ def validate_number(betrag, zinssatz, cutoff):
                 res[i + 3] = True
 
     return res
+
 
 @app.callback(
     [Output('show_output', 'style'),
@@ -491,7 +498,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
-    hist_figure = display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
+    hist_figure = display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names,
+                                    three_years_ago, now,
                                     session)
     dt_data = fill_datatable_allocation(res)
     session.close()
@@ -499,13 +507,15 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     return [{'display': 'inline'}, *perf_values, dt_data, pp, ef_figure, hist_figure, '', False]
 
 
-def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now, session):
+def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
+                      session):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
-            hist_figure = fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff, session)
+            hist_figure = fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff,
+                                           session)
         except:
             hist_figure = show_empty_hist_figure(now, three_years_ago)
             hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper',
@@ -579,7 +589,8 @@ def fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names,
     # Consider the weights of the optimal strategy
     money_distribution = {}
     for isin in relevant_isins:
-        money_distribution[isin] = (betrag*relevant_isin_weights[isin]) / prices[prices['isin'] == isin].iloc[0]['price']
+        money_distribution[isin] = (betrag * relevant_isin_weights[isin]) / prices[prices['isin'] == isin].iloc[0][
+            'price']
 
     # Consider the invested amount
     for isin in relevant_isins:
