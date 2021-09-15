@@ -41,10 +41,6 @@ def set_log_level(level):
     root.addHandler(handler)
 
 
-def prompt(ask):
-    return input(ask + " [y|n]\n>>> ").lower().strip()[0] == 'y'
-
-
 def run_crawler(name: str):
     process = CrawlerProcess(get_project_settings())
     process.crawl(name)
