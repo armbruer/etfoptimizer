@@ -18,7 +18,7 @@ from db import Session, sql_engine
 from db.models import Etf, EtfCategory, EtfHistory, IsinCategory
 from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
-from optimizer import PortfolioOptimizer
+from optimizer import PortfolioOptimizer, Optimizer
 
 app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
@@ -62,7 +62,7 @@ def extract_categories(category_types):
     return extracted_categories
 
 
-def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
+def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple, default_value=None):
     """
     Create a dropdown used for category/ISIN filtering.
     """
@@ -78,6 +78,7 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
             clearable=True,
             className="dash-bootstrap",
             multi=dropdown_multiple,
+            value=default_value,
         ),
     ],
         id=dropdown_id + ' Dropdown Div',
@@ -276,7 +277,9 @@ def create_app(app):
     """
     Combines the elements into the user interface
     """
-    test_data_methods = [('1', 'Methode 1'), ('2', 'Methode 2'), ('3', 'Methode 3')]
+    optimizer_methods = [('Mittelwert/Varianz', 'Mittelwert/Varianz'),
+                         ('CAPM/Semikovarianz', 'CAPM/Semikovarianz'),
+                         ('Exponentieller Mittelwert/Varianz', 'Exponentieller Mittelwert/Varianz')]
 
     categories = extract_categories(category_types)
 
@@ -290,15 +293,15 @@ def create_app(app):
     'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
 
     optimization_divs_dropdown = []
-    optimization_divs_dropdown.append(create_dropdown_tool_tip('Methode', test_data_methods, 'Zu verwendende Optimierungsmethode.', '40%', False))
+    optimization_divs_dropdown.append(create_dropdown('Methode', optimizer_methods, '40%', False, 'Mittelwert/Varianz'))
 
     optimization_divs_input = []
     optimization_divs_input.append(
-        create_input_field('Betrag', 'Investitionsbetrag (€)', 'Investitionsbetrag in Euro.', '20%', 'text', 'total_portfolio_value'))
+        create_input_field('Betrag', 'Investitionsbetrag (€)', 'Der Gesamtbetrag in Euro der in einem Portfolio optimal angelegt werden soll.', '20%', 'text', 'total_portfolio_value'))
     optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Theoretische Rendite einer Anlage ohne Risiko.', '20%', 'text', 'risk_free_rate'))
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Rendite einer Anlage ohne Risiko.', '20%', 'text', 'risk_free_rate'))
     optimization_divs_input.append(
-        create_input_field('Cutoff', 'Cutoff', 'Mindestrendite einer Anlage.', '20%', 'text', 'cutoff'))
+        create_input_field('Cutoff', 'Cutoff', 'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)', '20%', 'text', 'cutoff'))
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -446,10 +449,16 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(months=36)
     six_years_ago = now - relativedelta(months=72)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
-    opt = PortfolioOptimizer(isins, three_years_ago, now, session)
-    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session)
+    opt_method = Optimizer.from_str(methode)
+    opt = PortfolioOptimizer(isins, three_years_ago, now, session, opt_method)
+    opt.optimize()
+
+    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session, opt_method)
+    opt_hist.optimize()
+
     session.close()
-    if opt.df.empty:
+
+    if opt.prices.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
         return show_error
 
