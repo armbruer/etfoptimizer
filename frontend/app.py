@@ -25,9 +25,12 @@ category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Se
                   'Laufzeit', 'Rating']
 
 
-# Extracts ISINs from the database
-# This is used for the additional ISINs dropdown
 def extract_isin_tuples():
+    """
+    Extracts ISINs from the database
+
+    This is used for the additional ISINs dropdown
+    """
     session = Session()
     isins_db = session.query(IsinCategory)
 
@@ -39,9 +42,12 @@ def extract_isin_tuples():
     return isins
 
 
-# Extracts categories from the database
-# This is used for the category dropdowns
 def extract_categories(category_types):
+    """
+    Extracts categories from the database
+
+    This is used for the category dropdowns
+    """
     session = Session()
     categories = session.query(EtfCategory)
     session.close()
@@ -56,8 +62,11 @@ def extract_categories(category_types):
     return extracted_categories
 
 
-# The following functions create different elements for the user interface
 def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
+    """
+    Create a dropdown used for category/ISIN filtering.
+    """
+
     dropdown = html.Div([
         html.Label(dropdown_id + ':'),
         dcc.Dropdown(
@@ -79,6 +88,10 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple):
 
 
 def create_dropdown_tool_tip(dropdown_id, dropdown_data, tool_tip, width, dropdown_multiple):
+    """
+    Create a dropdown with a tooltip used for category/ISIN filtering.
+    """
+
     dropdown = html.Div([
         html.Label(dropdown_id + ':', style={'padding-right': 5}),
         html.Abbr("\u003F", title=tool_tip),
@@ -101,6 +114,9 @@ def create_dropdown_tool_tip(dropdown_id, dropdown_data, tool_tip, width, dropdo
 
 
 def create_input_field(input_id, input_data, tool_tip, width, input_type, config_key):
+    """
+    Creates an input field with a tooltip
+    """
     input_field = html.Div([
         html.Label(input_data + ':', style={'padding-right': 5}),
         html.Abbr("\u003F", title=tool_tip),
@@ -119,6 +135,9 @@ def create_input_field(input_id, input_data, tool_tip, width, input_type, config
 
 
 def create_button(button_id, button_text):
+    """
+    Creates a button with the given text
+    """
     button = html.Div([
         dbc.Button(
             button_text,
@@ -150,6 +169,9 @@ def create_perf_row(perf_row_id, perf_row_data, perf_row_text):
 
 
 def create_performance_info():
+    """
+    Creates a view that shows the performance metrics of etfs in a vertical layout
+    """
     performance_info = html.Div([
         html.H3('Portfolio Performance'),
         html.Div([
@@ -165,6 +187,9 @@ def create_performance_info():
 
 
 def create_data_table(table_id, table_data, width):
+    """
+    Creates a table for displaying the portfolio allocations
+    """
     table = html.Center(html.Div([
         dash_table.DataTable(
             id=table_id + '_table',
@@ -180,6 +205,9 @@ def create_data_table(table_id, table_data, width):
 
 
 def create_navbar():
+    """
+    Creates a navigation bar without navigation options just for optical purposes
+    """
     navbar = dbc.NavbarSimple(
         brand="ETF Portfolio Optimizer",
         brand_href="#",
@@ -193,6 +221,9 @@ def create_navbar():
 
 
 def create_figure(figure_id, width):
+    """
+    Creates a figure
+    """
     graph = html.Center(html.Div([
         dcc.Graph(
             id=figure_id + "_figure"
@@ -205,6 +236,9 @@ def create_figure(figure_id, width):
 
 
 def create_tabs():
+    """
+    Creates several tabs used for displaying the optimizers results
+    """
     graph_data = [{'id': 't_asset_name', 'name': 'Name'}, {'id': 't_asset_isin', 'name': 'ISIN'},
                   {'id': 't_asset_weight', 'name': 'Gewicht (%)'}, {'id': 't_asset_quantity', 'name': 'Anzahl'}]
 
@@ -238,8 +272,10 @@ def create_tabs():
     return tabs
 
 
-# Combines the elements into the user interface
 def create_app(app):
+    """
+    Combines the elements into the user interface
+    """
     test_data_methods = [('1', 'Methode 1'), ('2', 'Methode 2'), ('3', 'Methode 3')]
 
     categories = extract_categories(category_types)
@@ -305,8 +341,10 @@ def create_app(app):
         className="dash-bootstrap")
 
 
-# Get the ISINs for which the chosen filters apply
 def get_isins_from_filters(categories: List[int], extra_isins: List[str], session) -> List[str]:
+    """
+    Get the ISINs for which the chosen filters apply
+    """
     conds = [IsinCategory.category_id == cat for cat in categories]
     rows = session.query(IsinCategory.etf_isin).filter(
         and_(*conds) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
@@ -365,6 +403,13 @@ def validate_number(betrag, zinssatz, cutoff):
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
                   laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff):
+    """
+    Responsible for updating the UI when "Optimieren" button is pressed.
+
+    Takes all category/ISIN dropdowns and input fields as parameters and updates a various fields with error messages or
+    contents showing the results of the optimization in a visual and data-centric way.
+    """
+
     show_error = [{'display': 'none'}, '', '', '', None, {}, {}, {}, '', True]
 
     # 0. Step: Check if inputs are valid
@@ -445,6 +490,10 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
 
 def fill_datatable(res):
+    """
+    Fills the datatable figure with the portfolio allocation data
+    """
+
     res['weight'] = res['weight'].map("{:.3%}".format)
     res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
                               "quantity": "t_asset_quantity"})
@@ -453,6 +502,12 @@ def fill_datatable(res):
 
 
 def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff):
+    """
+    Fills the history figure with data
+
+    This figure shows what would have happened if you invested into this portfolio
+    during the last three years using the data from 4-6 years ago.
+    """
     max_sharpe = opt_hist.ef.max_sharpe(risk_free_rate=zinssatz)
 
     weights = [(k, v) for k, v in opt_hist.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
@@ -480,7 +535,7 @@ def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz
         .filter(EtfHistory.isin.in_(relevant_isins)).statement
     prices = pd.read_sql(query, session.bind)
     session.close()
- 
+
     # Consider the weights of the optimal strategy
     money_distribution = {}
     for isin in relevant_isins:
@@ -505,6 +560,9 @@ def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz
 
 
 def flatten_categories(cats_list):
+    """
+    Flattens a two-dimensional list of categories into a one-dimensional list
+    """
     flattened_cats = []
     for cats in cats_list:
         if cats:
