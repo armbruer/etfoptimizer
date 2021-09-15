@@ -579,8 +579,12 @@ def flatten_categories(cats_list):
     return flattened_cats
 
 
-if __name__ == '__main__':
+def run_gui(debug=False):
     create_table(sql_engine)
     create_app(app)
     app.title = "ETF Portfolio Optimizer"
-    app.run_server(debug=True)
+    app.run_server(debug=debug)
+
+
+if __name__ == '__main__':
+    run_gui(debug=True)

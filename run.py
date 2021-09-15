@@ -14,6 +14,7 @@ from db.table_manager import drop_static_tables
 from etf_history_api import save_history_api
 from etf_history_excel import save_history_excel
 from extraetf import Extraetf
+from frontend.app import run_gui
 from isin_extractor import extract_isins_from_db
 
 
@@ -167,6 +168,14 @@ def export_db():
         click.echo("Exporting the etf database failed")
 
     click.echo(result)
+
+
+@etfopt.command()
+def start_gui():
+    """
+    Starts the graphical user interface
+    """
+    run_gui()
 
 
 if __name__ == '__main__':
