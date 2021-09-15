@@ -15,12 +15,18 @@ from db.models import EtfHistory
 
 @unique
 class Optimizer(Enum):
+    """
+    Different Optimizers
+    """
     MEAN_VARIANCE = 0
     CAPM_SEMICOVARIANCE = 1
     EMA_VARIANCE = 2
 
     @staticmethod
     def from_str(optimizer: str):
+        """
+        Converts from str to Optimizer
+        """
         if optimizer == 'Mittelwert/Varianz':
             return Optimizer.MEAN_VARIANCE
         elif optimizer == 'CAPM/Semikovarianz':
@@ -34,6 +40,10 @@ class Optimizer(Enum):
 
 @dataclass
 class PortfolioOptimizer:
+    """
+    PortfolioOptimizer is a small wrapper for retrieving the price data from database within a date range and
+    pushing it into the respective optimizers.
+    """
     isins: List[str]
     start_date: date
     end_date: date
@@ -51,34 +61,40 @@ class PortfolioOptimizer:
             logging.warning(f"Detected empty dataframe for given ISINs. Optimizing will not produce any results.")
 
     def optimize(self):
+        """
+        Calls the chosen optimizer on the given data.
+        """
         if self.optimize_method is Optimizer.MEAN_VARIANCE:
-            self._mean_variance_optimizer()
+            self.__mean_variance_optimizer()
             return True
         elif self.optimize_method is Optimizer.CAPM_SEMICOVARIANCE:
-            self._capm_semicovariance_optimizer()
+            self.__capm_semicovariance_optimizer()
             return True
         elif self.optimize_method is Optimizer.EMA_VARIANCE:
-            self._ema_variance_optimizer()
+            self.__ema_variance_optimizer()
             return True
 
         return False
 
-    def _mean_variance_optimizer(self):
+    def __mean_variance_optimizer(self):
         mu = mean_historical_return(self.prices)
         S = CovarianceShrinkage(self.prices).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
 
-    def _capm_semicovariance_optimizer(self):
+    def __capm_semicovariance_optimizer(self):
         mu = capm_return(self.prices)
         S = semicovariance(self.prices)
         self.ef = EfficientFrontier(mu, S)
 
-    def _ema_variance_optimizer(self):
+    def __ema_variance_optimizer(self):
         mu = ema_historical_return(self.prices)
         S = CovarianceShrinkage(self.prices).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
 
     def allocated_portfolio(self, total_portfolio_value, max_sharpe):
+        """
+        Allocates the portfolio according to the optimization result
+        """
         latest_prices = get_latest_prices(self.prices)  # TODO greedy allocation?
         da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
         return da.lp_portfolio()
