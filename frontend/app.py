@@ -369,8 +369,8 @@ def get_isins_from_filters(categories: List[int], extra_isins: List[str], sessio
     Get the ISINs for which the chosen filters apply
     """
     conds = [IsinCategory.category_id == cat for cat in categories]
-    rows = session.query(IsinCategory.etf_isin).filter(
-        and_(*conds) | IsinCategory.etf_isin.in_(extra_isins)).distinct().all()
+    filter = and_(*conds) | IsinCategory.etf_isin.in_(extra_isins) if conds else IsinCategory.etf_isin.in_(extra_isins)
+    rows = session.query(IsinCategory.etf_isin).filter(filter).distinct().all()
     return [isin for (isin,) in rows]  # convert list of tuples to list of atomics
 
 
