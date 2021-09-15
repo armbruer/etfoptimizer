@@ -486,16 +486,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
-    weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
-    etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
-    res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
-
-    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)
-    alloc = [(k, v) for k, v in alloc.items()]
-    etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
-    res = res.join(etf_quantities.set_index('isin'))
-    res = res.reset_index()
+    leftover, res = get_alloc_result(betrag, cutoff, etf_names, opt, zinssatz)
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
@@ -507,6 +498,25 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     perf_values = map(str, opt.ef.portfolio_performance())
     return [{'display': 'inline'}, *perf_values, str(leftover), dt_data, pp, ef_figure, hist_figure, '', False]
+
+
+def get_alloc_result(betrag, cutoff, etf_names, opt, zinssatz):
+    """
+    Returns the allocation result for the optimization and performs data formatting
+    """
+
+    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
+
+    weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
+    etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
+
+    res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
+    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)
+    alloc = [(k, v) for k, v in alloc.items()]
+    etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
+    res = res.join(etf_quantities.set_index('isin'))
+    res = res.reset_index()
+    return leftover, res
 
 
 def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
@@ -571,21 +581,8 @@ def fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names,
     opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session, opt_method)
     opt_hist.optimize()
 
-    max_sharpe = opt_hist.ef.max_sharpe(risk_free_rate=zinssatz)
-
-    weights = [(k, v) for k, v in opt_hist.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
-    etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
-    res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
-
-    alloc, leftover = opt_hist.allocated_portfolio(betrag, max_sharpe)
-    alloc = [(k, v) for k, v in alloc.items()]
-    etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
-    res = res.join(etf_quantities.set_index('isin'))
-    res = res.reset_index()
-
+    _, res = get_alloc_result(betrag, cutoff, etf_names, opt_hist, zinssatz)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
-
-    # Get the prices for the relevant ISINs
     prices = get_prices(relevant_isins, session, three_years_ago, now)
 
     # Consider the weights of the optimal strategy
