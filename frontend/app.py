@@ -331,7 +331,7 @@ def create_app(app):
                     style={'display': 'inline', 'padding-right': 5}
                 ),
                 html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
-                'Kann unter Umständen die Laufzeit verschlechtern.'),
+                'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
                 ],
                 style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
                             'padding-right': 25}
@@ -460,21 +460,17 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
     now = datetime.datetime.now()
-    three_years_ago = now - relativedelta(months=36)
-    six_years_ago = now - relativedelta(months=72)
+    three_years_ago = now - relativedelta(years=3)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
     opt_method = Optimizer.from_str(methode)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session, opt_method)
-    opt.optimize()
-
-    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session, opt_method)
-    opt_hist.optimize()
-
-    session.close()
 
     if opt.prices.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
+        session.close()
         return show_error
+
+    opt.optimize()
 
     # 3. Step: Plot efficient frontier before calculating max sharpe
     # (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
@@ -494,32 +490,53 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     res = res.reset_index()
 
     # 5. Step: Show allocation results via different visuals
-    renamed_res = res.rename(columns={"weight": "Gewicht", "name": "Name", "isin": "ISIN"})
-    pp = px.pie(renamed_res, values='Gewicht', names='Name', hover_name='Name', hover_data=['ISIN'],
-                title='Portfolio Allokation')
-
-    hist_figure = None
-    if create_hist_perf:
-        try:
-            hist_figure = fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff)
-        except:
-            placeholder_list = [[three_years_ago, 0], [now, 0]]
-            placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
-            hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
-            hist_figure.update_layout(yaxis_range=[0,1])
-            hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper', yref='paper', x=0.5, y=0.5, showarrow=False)
-    else:
-        placeholder_list = [[three_years_ago, 0], [now, 0]]
-        placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
-        hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
-        hist_figure.update_layout(yaxis_range=[0,1])
-
-    dt_data = fill_datatable(res)
+    pp = fill_allocation_pie(res)
+    hist_figure = display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
+                                    session)
+    dt_data = fill_datatable_allocation(res)
+    session.close()
 
     return [{'display': 'inline'}, *perf_values, dt_data, pp, ef_figure, hist_figure, '', False]
 
 
-def fill_datatable(res):
+def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now, session):
+    """
+    Depending on create_hist_perf the history figure is displayed or not
+    """
+    if create_hist_perf:
+        try:
+            hist_figure = fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff, session)
+        except:
+            hist_figure = show_empty_hist_figure(now, three_years_ago)
+            hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper',
+                                       yref='paper', x=0.5, y=0.5, showarrow=False)
+    else:
+        hist_figure = show_empty_hist_figure(now, three_years_ago)
+    return hist_figure
+
+
+def show_empty_hist_figure(now, three_years_ago):
+    """
+    Shows an empty history figure
+    """
+    placeholder_list = [[three_years_ago, 0], [now, 0]]
+    placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
+    hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
+    hist_figure.update_layout(yaxis_range=[0, 1])
+    return hist_figure
+
+
+def fill_allocation_pie(res):
+    """
+    Fills the pie chart with the portfolio allocation data
+    """
+    renamed_res = res.rename(columns={"weight": "Gewicht", "name": "Name", "isin": "ISIN"})
+    pp = px.pie(renamed_res, values='Gewicht', names='Name', hover_name='Name', hover_data=['ISIN'],
+                title='Portfolio Allokation')
+    return pp
+
+
+def fill_datatable_allocation(res):
     """
     Fills the datatable figure with the portfolio allocation data
     """
@@ -531,13 +548,17 @@ def fill_datatable(res):
     return dt_data
 
 
-def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz, cutoff):
+def fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff, session):
     """
     Fills the history figure with data
 
     This figure shows what would have happened if you invested into this portfolio
     during the last three years using the data from 4-6 years ago.
     """
+    six_years_ago = now - relativedelta(years=6)
+    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session, opt_method)
+    opt_hist.optimize()
+
     max_sharpe = opt_hist.ef.max_sharpe(risk_free_rate=zinssatz)
 
     weights = [(k, v) for k, v in opt_hist.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
@@ -550,21 +571,10 @@ def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz
     res = res.join(etf_quantities.set_index('isin'))
     res = res.reset_index()
 
-    # Get the relevant ISINs
-    relevant_isins = []
-    relevant_isin_weights = {}
-    for _, row in res.iterrows():
-        if row['weight'] > 0:
-            relevant_isins.append(row['isin'])
-            relevant_isin_weights[row['isin']] = row['weight']
+    relevant_isin_weights, relevant_isins = get_relevant_isins(res)
 
     # Get the prices for the relevant ISINs
-    session = Session()
-    query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
-        .filter(EtfHistory.datapoint_date.between(three_years_ago, now)) \
-        .filter(EtfHistory.isin.in_(relevant_isins)).statement
-    prices = pd.read_sql(query, session.bind)
-    session.close()
+    prices = get_prices(relevant_isins, session, three_years_ago, now)
 
     # Consider the weights of the optimal strategy
     money_distribution = {}
@@ -589,6 +599,32 @@ def fill_hist_figure(betrag, opt_hist, now, three_years_ago, etf_names, zinssatz
     return hist_figure
 
 
+def get_prices(isins, session, start_date, end_date):
+    """
+    Returns the prices for a date range and a list of isins
+    """
+
+    query = session.query(EtfHistory.datapoint_date, EtfHistory.isin, EtfHistory.price) \
+        .filter(EtfHistory.datapoint_date.between(start_date, end_date)) \
+        .filter(EtfHistory.isin.in_(isins)).statement
+    prices = pd.read_sql(query, session.bind)
+    return prices
+
+
+def get_relevant_isins(res):
+    """
+    Returns only the ISINs with weight > 0 and their respective weights.
+    """
+    relevant_isins = []
+    relevant_isin_weights = {}
+    for _, row in res.iterrows():
+        if row['weight'] > 0:
+            relevant_isins.append(row['isin'])
+            relevant_isin_weights[row['isin']] = row['weight']
+
+    return relevant_isin_weights, relevant_isins
+
+
 def flatten_categories(cats_list):
     """
     Flattens a two-dimensional list of categories into a one-dimensional list
@@ -601,6 +637,9 @@ def flatten_categories(cats_list):
 
 
 def run_gui(debug=False):
+    """
+    Starts the GUI.
+    """
     create_table(sql_engine)
     create_app(app)
     app.title = "ETF Portfolio Optimizer"
