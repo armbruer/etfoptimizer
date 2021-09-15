@@ -179,6 +179,7 @@ def create_performance_info():
             create_perf_row("er", "", "Erwartete jährliche Rendite: "),
             create_perf_row("vol", "", "Jährliche Volatilität: "),
             create_perf_row("ms", "", "Sharpe Ratio: "),
+            create_perf_row("ir", "", "Investitionsrestbetrag (€): ")
         ], style={'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25, 'padding-right': 25}),
     ],
         id="pp_info",
@@ -408,6 +409,7 @@ def validate_number(betrag, zinssatz, cutoff):
      Output('pp_er_value', 'children'),
      Output('pp_vol_value', 'children'),
      Output('pp_ms_value', 'children'),
+     Output('pp_ir_value', 'children'),
      Output('all_table', 'data'),
      Output('all_pie_figure', 'figure'),
      Output('ef_figure', 'figure'),
@@ -434,7 +436,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     contents showing the results of the optimization in a visual and data-centric way.
     """
 
-    show_error = [{'display': 'none'}, '', '', '', None, {}, {}, {}, '', True]
+    show_error = [{'display': 'none'}, '', '', '', '', None, {}, {}, {}, '', True]
 
     # 0. Step: Check if inputs are valid
     if not betrag or not zinssatz or not cutoff:
@@ -482,15 +484,14 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 3. Step: Plot efficient frontier before calculating max sharpe
     # (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
-    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    perf_values = map(str, opt.ef.portfolio_performance())
+    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
     weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
 
-    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)  # TODO show leftover
+    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)
     alloc = [(k, v) for k, v in alloc.items()]
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = res.join(etf_quantities.set_index('isin'))
@@ -504,7 +505,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     dt_data = fill_datatable_allocation(res)
     session.close()
 
-    return [{'display': 'inline'}, *perf_values, dt_data, pp, ef_figure, hist_figure, '', False]
+    perf_values = map(str, opt.ef.portfolio_performance())
+    return [{'display': 'inline'}, *perf_values, str(leftover), dt_data, pp, ef_figure, hist_figure, '', False]
 
 
 def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
