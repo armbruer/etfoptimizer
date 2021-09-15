@@ -1,11 +1,11 @@
 import configparser
 import logging
 import os
+from appdirs import user_config_dir
 from pathlib import Path
 
-# prevents config creation in frontend folder if app.py is used as entry point
-config_file = Path(Path.cwd().parent, 'etfoptimizer.ini') if os.getcwd().find("frontend") != -1 else Path(
-    'etfoptimizer.ini')
+config_dir = Path(user_config_dir(appname="etfoptimizer"))
+config_file = Path(config_dir, 'etfoptimizer.ini')
 
 opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
 db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': '<username>',
@@ -18,6 +18,8 @@ def create_if_not_exists():
     """
     Creates the config file if it does not already exist and populates the file with default values
     """
+
+    config_dir.mkdir(parents=True, exist_ok=True)
     if os.path.isfile(config_file):
         logging.debug("EtfOptimizer config already exists")
         return

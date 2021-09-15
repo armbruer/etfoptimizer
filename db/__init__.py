@@ -22,8 +22,9 @@ if uri is None:
 
 if config.get_value('database-uri', 'username') == "<username>" or config.get_value('database-uri',
                                                                                     'password') == "<password>":
-    click.echo("""Please make sure to configure your database connection in etfoptimizer.ini first.
-    At minimum you need to replace values of the format <...> with the expected values.""")
+    click.echo("Please make sure to configure your database connection in etfoptimizer.ini first. At minimum you need "
+               "to replace values of the format <...> with the expected values. You should find the file in "
+               "~/.config/etfoptimizer on Linux and in C::\\Users\\<windows user>\\AppData\\Local\\etfoptimizer\\Config")
     sys.exit(1)
 
 sql_engine = create_engine(uri)

@@ -23,7 +23,8 @@ setup(
         'plotly>=5.3.1,<5.4',
         'openpyxl>=3.0.8,<3.1.0',
         'python-dateutil>=2.8.2,<2.9.0',
-        'eikon>=1.1.12,<1.2'
+        'eikon>=1.1.12,<1.2',
+        'appdirs>=1.4.4,<1.5'
     ],
     entry_points='''
         [console_scripts]
