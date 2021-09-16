@@ -486,13 +486,12 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    leftover, res = get_alloc_result(betrag, cutoff, etf_names, opt, zinssatz)
+    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz)
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
-    hist_figure = display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names,
-                                    three_years_ago, now,
-                                    session)
+    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+                                    three_years_ago, now)
     dt_data = fill_datatable_allocation(res)
     session.close()
 
@@ -500,7 +499,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     return [{'display': 'inline'}, *perf_values, str(leftover), dt_data, pp, ef_figure, hist_figure, '', False]
 
 
-def get_alloc_result(betrag, cutoff, etf_names, opt, zinssatz):
+def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz):
     """
     Returns the allocation result for the optimization and performs data formatting
     """
@@ -519,29 +518,38 @@ def get_alloc_result(betrag, cutoff, etf_names, opt, zinssatz):
     return leftover, res
 
 
-def display_hist_perf(create_hist_perf, opt_method, isins, betrag, cutoff, zinssatz, etf_names, three_years_ago, now,
-                      session):
+def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+                      start_date, end_date):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
-            hist_figure = fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff,
-                                           session)
+            hist_figure = show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+                                           start_date, end_date)
         except:
-            hist_figure = show_empty_hist_figure(now, three_years_ago)
+            hist_figure = show_empty_hist_figure(start_date, end_date)
             hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper',
                                        yref='paper', x=0.5, y=0.5, showarrow=False)
     else:
-        hist_figure = show_empty_hist_figure(now, three_years_ago)
+        hist_figure = show_empty_hist_figure(start_date, end_date)
     return hist_figure
 
 
-def show_empty_hist_figure(now, three_years_ago):
+def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, session, start_date, end_date):
+    six_years_ago = end_date - relativedelta(years=6)
+    opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, opt_method)
+    opt_hist.optimize()
+    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, session, start_date, end_date)
+    hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
+    return hist_figure
+
+
+def show_empty_hist_figure(start_date, end_date):
     """
     Shows an empty history figure
     """
-    placeholder_list = [[three_years_ago, 0], [now, 0]]
+    placeholder_list = [[start_date, 0], [end_date, 0]]
     placeholder_df = pd.DataFrame(placeholder_list, columns=['Datum', 'Wert'])
     hist_figure = px.line(placeholder_df, x=placeholder_df['Datum'], y=placeholder_df['Wert'])
     hist_figure.update_layout(yaxis_range=[0, 1])
@@ -570,20 +578,17 @@ def fill_datatable_allocation(res):
     return dt_data
 
 
-def fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names, zinssatz, cutoff, session):
+def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, session, start_date, end_date):
     """
-    Fills the history figure with data
+    Prepares the historical data for displaying in a figure
 
-    This figure shows what would have happened if you invested into this portfolio
+    This data shows what would have happened if you invested into this portfolio
     during the last three years using the data from 4-6 years ago.
     """
-    six_years_ago = now - relativedelta(years=6)
-    opt_hist = PortfolioOptimizer(isins, six_years_ago, three_years_ago, session, opt_method)
-    opt_hist.optimize()
 
-    _, res = get_alloc_result(betrag, cutoff, etf_names, opt_hist, zinssatz)
+    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
-    prices = get_prices(relevant_isins, session, three_years_ago, now)
+    prices = get_prices(relevant_isins, session, start_date, end_date)
 
     # Consider the weights of the optimal strategy
     money_distribution = {}
@@ -605,8 +610,7 @@ def fill_hist_figure(opt_method, isins, betrag, three_years_ago, now, etf_names,
 
     # Show the result
     prices = prices.rename(columns={"price": "Wert", "datapoint_date": "Datum"})
-    hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
-    return hist_figure
+    return prices
 
 
 def get_prices(isins, session, start_date, end_date):
