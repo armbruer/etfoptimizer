@@ -32,6 +32,7 @@ def main():
     # define parameters
     total_portfolio_value = 1000000
     total_years = 10
+    rounding = 5
     risk_free_rate = 0.02
     cutoff = 0.000001
     period_length_in_years = 3
@@ -68,7 +69,7 @@ def main():
 
             opt_hist = PortfolioOptimizer(isins, start_date, end_date, session, opt_method)
             opt_hist.optimize()
-            prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, session,
+            prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
                                        end_date, end_date_invest)
             price_dfs.append(prices)
 

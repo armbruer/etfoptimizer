@@ -437,6 +437,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     """
 
     show_error = [{'display': 'none'}, '', '', '', '', None, {}, {}, {}, '', True]
+    rounding = int(config.get_value('optimizer-defaults', 'rounding'))
 
     # 0. Step: Check if inputs are valid
     if not betrag or not zinssatz or not cutoff:
@@ -486,27 +487,27 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz)
+    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding)
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
-    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
                                     three_years_ago, now)
-    dt_data = fill_datatable_allocation(res)
+    dt_data = fill_datatable_allocation(res, rounding)
     session.close()
 
-    perf_values = map(str, opt.ef.portfolio_performance())
-    return [{'display': 'inline'}, *perf_values, str(leftover), dt_data, pp, ef_figure, hist_figure, '', False]
+    perf_values = map(lambda x: str(round(x, rounding)), opt.ef.portfolio_performance())
+    return [{'display': 'inline'}, *perf_values, str(round(leftover, rounding)), dt_data, pp, ef_figure, hist_figure, '', False]
 
 
-def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz):
+def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding):
     """
     Returns the allocation result for the optimization and performs data formatting
     """
 
     max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
 
-    weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=3).items()]
+    weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=rounding).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
 
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
@@ -518,14 +519,14 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz):
     return leftover, res
 
 
-def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
                       start_date, end_date):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
-            hist_figure = show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, session,
+            hist_figure = show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
                                            start_date, end_date)
         except:
             hist_figure = show_empty_hist_figure(start_date, end_date)
@@ -536,11 +537,11 @@ def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cu
     return hist_figure
 
 
-def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, session, start_date, end_date):
+def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session, start_date, end_date):
     six_years_ago = end_date - relativedelta(years=6)
     opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, opt_method)
     opt_hist.optimize()
-    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, session, start_date, end_date)
+    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date)
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure
 
@@ -566,19 +567,19 @@ def fill_allocation_pie(res):
     return pp
 
 
-def fill_datatable_allocation(res):
+def fill_datatable_allocation(res, rounding):
     """
     Fills the datatable figure with the portfolio allocation data
     """
 
-    res['weight'] = res['weight'].map("{:.3%}".format)
+    res['weight'] = res['weight'].round(rounding).map("{:.3%}".format)
     res = res.rename(columns={"isin": "t_asset_isin", "weight": "t_asset_weight", "name": "t_asset_name",
                               "quantity": "t_asset_quantity"})
     dt_data = res.to_dict('records')
     return dt_data
 
 
-def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, session, start_date, end_date):
+def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date):
     """
     Prepares the historical data for displaying in a figure
 
@@ -586,7 +587,7 @@ def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, session, st
     during the last three years using the data from 4-6 years ago.
     """
 
-    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz)
+    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz, rounding)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
     prices = get_prices(relevant_isins, session, start_date, end_date)
 
