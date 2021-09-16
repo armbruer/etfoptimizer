@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='etfoptimizer',
-    version='0.1.0',
+    version='1.0.0',
     description="EtfOptimizer is a tool for collecting ETF data and running optimizations on this data",
     packages=find_packages(),
     include_package_data=True,
