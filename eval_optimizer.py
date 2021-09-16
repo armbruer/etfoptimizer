@@ -3,13 +3,14 @@ import dash_html_components as html
 import pandas as pd
 import plotly.express as px
 import yfinance as yf
+import numpy as np
 
 from datetime import datetime
 from dash import dash
 from dateutil.relativedelta import relativedelta
 from db import Session
 from db.models import Etf
-from frontend.app import create_app, prepare_hist_data
+from frontend.app import create_app, prepare_hist_data, get_isins_from_filters
 from optimizer import Optimizer, PortfolioOptimizer
 
 
@@ -28,6 +29,7 @@ def create_figure(figure_id, width, figure):
 
     return graph
 
+
 def main():
     # define parameters
     total_portfolio_value = 1000000
@@ -40,7 +42,7 @@ def main():
 
     # open session, get ISINs and names
     session = Session()
-    isins = []
+    isins = get_isins_from_filters([1], [], session=session)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
 
     eval_app = dash.Dash(__name__)
@@ -48,24 +50,29 @@ def main():
     eval_app.title = "ETF Portfolio Optimizer"
 
     msci_world = yf.Ticker("XWD.TO")
-    print(msci_world.info)
 
     first_day = datetime.now() - relativedelta(years=total_years)
     last_day = datetime.now()
     msci_hist = msci_world.history(start=first_day, end=last_day)
-    msci_hist_prices = msci_hist[['Close']]
-    msci_hist_prices.rename(columns={"Close", "Wert"})
-    msci_hist_prices['Name'] = 'iShares MSCI World Index ETF'
+    msci_hist = msci_hist.drop(columns=['Low', 'High', 'Volume', 'Dividends', 'Open', 'Stock Splits'])
 
+    price_on_first_day = msci_hist['Close'].values[0]
+    shares = total_portfolio_value / price_on_first_day # do not display rest
+    msci_hist['Close'] = np.where(True, msci_hist['Close'] * shares, msci_hist['Close'])
+    msci_hist['Name'] = 'iShares MSCI World Index ETF'
+    msci_hist = msci_hist.rename(columns={"Close": "Wert"})
+    msci_hist.reset_index()
 
     figures = []
     for opt_method in opt_methods:
 
         price_dfs = []
         for years in range(total_years, -1, -1):
-            start_date = datetime.now() - relativedelta(years=years + period_length_in_years)
+            start_date = datetime.now() - relativedelta(years=years)
             end_date = start_date + relativedelta(years=period_length_in_years)
             end_date_invest = end_date + relativedelta(years=1)
+            if end_date_invest > datetime.now():
+                break
 
             opt_hist = PortfolioOptimizer(isins, start_date, end_date, session, opt_method)
             opt_hist.optimize()
@@ -75,7 +82,9 @@ def main():
 
         prices = pd.concat(price_dfs)
         prices['Name'] = 'Optimiertes Portfolio'
-        hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
+
+        df = pd.concat([prices, msci_hist])
+        hist_figure = px.line(df, x=df['Datum'], y=df['Wert'])
         figures.append(create_figure(str(opt_method), '80%', hist_figure))
 
     eval_app.layout = html.Div(figures)
