@@ -97,4 +97,4 @@ class PortfolioOptimizer:
         """
         latest_prices = get_latest_prices(self.prices)  # TODO greedy allocation?
         da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
-        return da.lp_portfolio()
+        return da.lp_portfolio(solver="GUROBI")

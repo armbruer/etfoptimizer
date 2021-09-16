@@ -14,10 +14,10 @@ setup(
         'sqlalchemy-utils>=0.37,<0.38',
         'pandas>=1.3.3,<1.4',
         'requests>=2.26,<2.27',
-        'dash>=1.21,<2.0', # TODO update this
+        'dash>=1.21,<2.0',  # TODO update this
         'dash-bootstrap-components>=0.12.0,<0.13',
         'PyPortfolioOpt>=1.4.1,<1.5.0',
-        'cvxopt>=1.2.0,<1.3',  # TODO try a different solver
+        'gurobipy>=9.1.0,<9.2.0',
         'scikit-learn>=0.24.0,<0.25.0',
         'numpy>=1.21.2,<1.22',
         'plotly>=5.3.1,<5.4',
