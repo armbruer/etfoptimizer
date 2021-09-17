@@ -63,6 +63,7 @@ def main():
     msci_hist['Name'] = 'iShares MSCI World Index ETF'
     msci_hist.reset_index(inplace=True)
     msci_hist = msci_hist.rename(columns={"Close": "Wert", "Date" : "Datum"})
+    msci_hist['Datum'] = msci_hist['Datum'].apply(lambda x: str(x).split(" ")[0])
 
     figures = []
     for opt_method in opt_methods:
