@@ -5,6 +5,7 @@ from typing import List
 from enum import Enum, unique
 
 import pandas as pd
+from dateutil.relativedelta import relativedelta
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt.expected_returns import mean_historical_return, capm_return, ema_historical_return
@@ -97,4 +98,4 @@ class PortfolioOptimizer:
         """
         latest_prices = get_latest_prices(self.prices)  # TODO greedy allocation?
         da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
-        return da.lp_portfolio(solver="GUROBI")
+        return da.lp_portfolio()

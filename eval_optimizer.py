@@ -10,7 +10,7 @@ from dash import dash
 from dateutil.relativedelta import relativedelta
 from db import Session
 from db.models import Etf
-from frontend.app import create_app, prepare_hist_data, get_isins_from_filters
+from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data
 from optimizer import Optimizer, PortfolioOptimizer
 
 
@@ -32,17 +32,18 @@ def create_figure(figure_id, width, figure):
 
 def main():
     # define parameters
-    total_portfolio_value = 1000000
+    total_portfolio_value = 100000
     total_years = 10
     rounding = 5
     risk_free_rate = 0.02
-    cutoff = 0.000001
+    cutoff = 0.00001
     period_length_in_years = 3
-    opt_methods = [Optimizer.MEAN_VARIANCE, Optimizer.EMA_VARIANCE, Optimizer.CAPM_SEMICOVARIANCE]
+    opt_methods = [Optimizer.MEAN_VARIANCE]
 
     # open session, get ISINs and names
     session = Session()
     isins = get_isins_from_filters([1], [], session=session)
+
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
 
     eval_app = dash.Dash(__name__)
@@ -60,8 +61,8 @@ def main():
     shares = total_portfolio_value / price_on_first_day # do not display rest
     msci_hist['Close'] = np.where(True, msci_hist['Close'] * shares, msci_hist['Close'])
     msci_hist['Name'] = 'iShares MSCI World Index ETF'
-    msci_hist = msci_hist.rename(columns={"Close": "Wert"})
-    msci_hist.reset_index()
+    msci_hist.reset_index(inplace=True)
+    msci_hist = msci_hist.rename(columns={"Close": "Wert", "Date" : "Datum"})
 
     figures = []
     for opt_method in opt_methods:
@@ -74,7 +75,8 @@ def main():
             if end_date_invest > datetime.now():
                 break
 
-            opt_hist = PortfolioOptimizer(isins, start_date, end_date, session, opt_method)
+            preprocessed_isin = preprocess_isin_price_data(isins, session, start_date)
+            opt_hist = PortfolioOptimizer(preprocessed_isin, start_date, end_date, session, opt_method)
             opt_hist.optimize()
             prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
                                        end_date, end_date_invest)

@@ -471,6 +471,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 2. Step: Optimize the portfolio and get matching names for the ISINs used
     now = datetime.datetime.now()
     three_years_ago = now - relativedelta(years=3)
+    isins = preprocess_isin_price_data(isins, session, three_years_ago)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
     opt_method = Optimizer.from_str(methode)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session, opt_method)
@@ -498,6 +499,20 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     perf_values = map(lambda x: str(round(x, rounding)), opt.ef.portfolio_performance())
     return [{'display': 'inline'}, *perf_values, str(round(leftover, rounding)), dt_data, pp, ef_figure, hist_figure, '', False]
+
+
+def preprocess_isin_price_data(isins, session, start_date):
+    buffer_start = start_date - relativedelta(days=10)
+
+    data = session.query(EtfHistory.isin) \
+        .filter(EtfHistory.datapoint_date.between(buffer_start, start_date)) \
+        .filter(EtfHistory.isin.in_(isins)).distinct()
+
+    to_keep = []
+    for (isin,) in data:
+        to_keep.append(isin)
+
+    return to_keep
 
 
 def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding):
