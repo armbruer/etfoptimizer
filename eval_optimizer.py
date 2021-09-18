@@ -82,6 +82,7 @@ def main():
             prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
                                        end_date, end_date_invest)
             price_dfs.append(prices)
+            total_portfolio_value = price_dfs[len(price_dfs) - 1].iloc[-1][1]
 
         prices = pd.concat(price_dfs)
         prices['Name'] = 'Optimiertes Portfolio'
