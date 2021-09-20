@@ -18,7 +18,7 @@ from db import Session, sql_engine
 from db.models import Etf, EtfCategory, EtfHistory, IsinCategory
 from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
-from optimizer import PortfolioOptimizer, Optimizer
+from optimizer import PortfolioOptimizer, OptimizeMethod
 
 app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
@@ -473,7 +473,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(years=3)
     isins = preprocess_isin_price_data(isins, session, three_years_ago)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
-    opt_method = Optimizer.from_str(methode)
+    opt_method = OptimizeMethod.from_str(methode)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session, opt_method)
 
     if opt.prices.empty:
@@ -481,7 +481,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
         session.close()
         return show_error
 
-    opt.optimize()
+    opt.prepare_optmizer()
 
     # 3. Step: Plot efficient frontier before calculating max sharpe
     # (see https://github.com/robertmartin8/PyPortfolioOpt/issues/332)
@@ -555,7 +555,7 @@ def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cu
 def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session, start_date, end_date):
     six_years_ago = end_date - relativedelta(years=6)
     opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, opt_method)
-    opt_hist.optimize()
+    opt_hist.prepare_optmizer()
     prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date)
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure

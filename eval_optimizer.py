@@ -11,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 from db import Session
 from db.models import Etf
 from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data
-from optimizer import Optimizer, PortfolioOptimizer
+from optimizer import OptimizeMethod, PortfolioOptimizer
 
 
 def create_figure(figure_id, width, figure):
@@ -38,7 +38,7 @@ def main():
     risk_free_rate = 0.02
     cutoff = 0.00001
     period_length_in_years = 3
-    opt_methods = [Optimizer.MEAN_VARIANCE]
+    opt_methods = [OptimizeMethod.MEAN_VARIANCE]
 
     # open session, get ISINs and names
     session = Session()
@@ -78,7 +78,7 @@ def main():
 
             preprocessed_isin = preprocess_isin_price_data(isins, session, start_date)
             opt_hist = PortfolioOptimizer(preprocessed_isin, start_date, end_date, session, opt_method)
-            opt_hist.optimize()
+            opt_hist.prepare_optmizer()
             prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
                                        end_date, end_date_invest)
             price_dfs.append(prices)

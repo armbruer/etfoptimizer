@@ -1,12 +1,11 @@
 import logging
 from dataclasses import dataclass
 from datetime import date
-from typing import List
 from enum import Enum, unique
+from typing import List
 
-import pandas as pd
 import numpy as np
-from dateutil.relativedelta import relativedelta
+import pandas as pd
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
 from pypfopt.expected_returns import mean_historical_return, capm_return, ema_historical_return
@@ -17,7 +16,7 @@ from db.models import EtfHistory
 
 
 @unique
-class Optimizer(Enum):
+class OptimizeMethod(Enum):
     """
     Different Optimizers
     """
@@ -31,11 +30,11 @@ class Optimizer(Enum):
         Converts from str to Optimizer
         """
         if optimizer == 'Mittelwert/Varianz':
-            return Optimizer.MEAN_VARIANCE
+            return OptimizeMethod.MEAN_VARIANCE
         elif optimizer == 'CAPM/Semikovarianz':
-            return Optimizer.CAPM_SEMICOVARIANCE
+            return OptimizeMethod.CAPM_SEMICOVARIANCE
         elif optimizer == 'Exponentieller Mittelwert/Varianz':
-            return Optimizer.EMA_VARIANCE
+            return OptimizeMethod.EMA_VARIANCE
         else:
             raise ValueError(f"Unknown value for Optimizer enum: {optimizer}")
 
@@ -50,7 +49,7 @@ class PortfolioOptimizer:
     start_date: date
     end_date: date
     session: Session
-    optimize_method: Optimizer
+    optimize_method: OptimizeMethod = OptimizeMethod.MEAN_VARIANCE
 
     def __post_init__(self):
         query = self.session.query(EtfHistory.isin, EtfHistory.datapoint_date, EtfHistory.price) \
@@ -63,38 +62,25 @@ class PortfolioOptimizer:
         if self.prices.empty:
             logging.warning(f"Detected empty dataframe for given ISINs. Optimizing will not produce any results.")
 
-    def optimize(self):
+    def prepare_optmizer(self):
         """
-        Calls the chosen optimizer on the given data.
+        Prepares the chosen optimizer on the retrieved data
         """
-        if self.optimize_method is Optimizer.MEAN_VARIANCE:
-            self.__mean_variance_optimizer()
-            return True
-        elif self.optimize_method is Optimizer.CAPM_SEMICOVARIANCE:
-            self.__capm_semicovariance_optimizer()
-            return True
-        elif self.optimize_method is Optimizer.EMA_VARIANCE:
-            self.__ema_variance_optimizer()
-            return True
+        if self.optimize_method is OptimizeMethod.MEAN_VARIANCE:
+            mu = mean_historical_return(self.prices)
+            mu = np.clip(mu, 0, 1)
+            S = CovarianceShrinkage(self.prices).ledoit_wolf()
+        elif self.optimize_method is OptimizeMethod.CAPM_SEMICOVARIANCE:
+            mu = capm_return(self.prices)
+            mu = np.clip(mu, 0, 1)
+            S = semicovariance(self.prices)
+        elif self.optimize_method is OptimizeMethod.EMA_VARIANCE:
+            mu = ema_historical_return(self.prices)
+            mu = np.clip(mu, 0, 1)
+            S = CovarianceShrinkage(self.prices).ledoit_wolf()
+        else:
+            raise ValueError("optimize_method must not be None")
 
-        return False
-
-    def __mean_variance_optimizer(self):
-        mu = mean_historical_return(self.prices)
-        mu = np.clip(mu, 0, 1)
-        S = CovarianceShrinkage(self.prices).ledoit_wolf()
-        self.ef = EfficientFrontier(mu, S)
-
-    def __capm_semicovariance_optimizer(self):
-        mu = capm_return(self.prices)
-        mu = np.clip(mu, 0, 1)
-        S = semicovariance(self.prices)
-        self.ef = EfficientFrontier(mu, S)
-
-    def __ema_variance_optimizer(self):
-        mu = ema_historical_return(self.prices)
-        mu = np.clip(mu, 0, 1)
-        S = CovarianceShrinkage(self.prices).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
 
     def allocated_portfolio(self, total_portfolio_value, max_sharpe):
