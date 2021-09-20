@@ -5,6 +5,7 @@ from typing import List
 from enum import Enum, unique
 
 import pandas as pd
+import numpy as np
 from dateutil.relativedelta import relativedelta
 from pypfopt.discrete_allocation import DiscreteAllocation, get_latest_prices
 from pypfopt.efficient_frontier import EfficientFrontier
@@ -57,6 +58,7 @@ class PortfolioOptimizer:
             .filter(EtfHistory.isin.in_(self.isins)).statement
         self.prices = pd.read_sql(query, self.session.bind)
         self.prices = self.prices.pivot(index='datapoint_date', columns='isin', values='price')
+        self.prices = self.prices.dropna()
 
         if self.prices.empty:
             logging.warning(f"Detected empty dataframe for given ISINs. Optimizing will not produce any results.")
@@ -79,16 +81,19 @@ class PortfolioOptimizer:
 
     def __mean_variance_optimizer(self):
         mu = mean_historical_return(self.prices)
+        mu = np.clip(mu, 0, 1)
         S = CovarianceShrinkage(self.prices).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
 
     def __capm_semicovariance_optimizer(self):
         mu = capm_return(self.prices)
+        mu = np.clip(mu, 0, 1)
         S = semicovariance(self.prices)
         self.ef = EfficientFrontier(mu, S)
 
     def __ema_variance_optimizer(self):
         mu = ema_historical_return(self.prices)
+        mu = np.clip(mu, 0, 1)
         S = CovarianceShrinkage(self.prices).ledoit_wolf()
         self.ef = EfficientFrontier(mu, S)
 
