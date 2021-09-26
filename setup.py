@@ -18,7 +18,7 @@ setup(
         'dash-bootstrap-components>=0.12.0,<0.13',
         'PyPortfolioOpt>=1.4.1,<1.5.0',
         'gurobipy>=9.1.0,<9.2.0',
-        'cvxopt>=1.2.6,<1.3'
+        'cvxopt>=1.2.6,<1.3',
         'scikit-learn>=0.24.0,<0.25.0',
         'numpy>=1.21.2,<1.22',
         'plotly>=5.3.1,<5.4',
