@@ -1,4 +1,4 @@
-import logging
+import click
 import time
 
 import scrapy
@@ -21,7 +21,7 @@ class JustetfSpider(scrapy.Spider):
         'ITEM_PIPELINES': {
             'scraping.pipelines.EtfPipeline': 300
         },
-        'LOG_LEVEL': 'INFO'
+        'LOG_LEVEL': 'WARNING'
     }
 
     def __init__(self, *a, **kw):
@@ -38,7 +38,7 @@ class JustetfSpider(scrapy.Spider):
         self.driver = webdriver.Chrome(desired_capabilities=desired_capabilities)
 
     def parse(self, response, **kwargs):
-        logging.info("Begin parsing ...")
+        click.echo("Begin parsing ...")
         # load first page second time, this time through selenium
         self.driver.get(response.url)
         time.sleep(3)
@@ -50,10 +50,10 @@ class JustetfSpider(scrapy.Spider):
             time.sleep(2.5)  # give enough time for updating contents inside selenium browser
             r = Selector(text=self.driver.page_source)
             for link in r.xpath('//tbody/tr[@role="row"]/td/a[@class="link"]/@href').getall():
-                logging.debug("Found link:" + link)
+                click.echo("Found link:" + link)
                 yield Request(link, callback=self.parse_item)
 
-            logging.info(f"Extracted etfs from page {pagenum}")
+            click.echo(f"Extracted etfs from page {pagenum}")
             pagenum += 1
             next_page = self.driver.find_element_by_xpath('//a[@id="etfsTable_next"]')
             disabled = next_page.get_attribute('class').find('disabled')
@@ -88,7 +88,7 @@ class JustetfSpider(scrapy.Spider):
             allow_selection_button.click()
             time.sleep(0.5)
         except NoSuchElementException:
-            logging.warning("No cookie message was found. Continuing ...")
+            click.echo("No cookie message was found. Continuing ...")
 
     def parse_item(self, response):
         """
@@ -96,7 +96,7 @@ class JustetfSpider(scrapy.Spider):
         """
         isin_parent = response.xpath('//span[@class="vallabel" and .="ISIN"]/..')
         name = isin_parent.xpath('../*[1]/text()').getall()
-        logging.info(f"Parsing ETF '{name}'")
+        click.echo(f"Parsing ETF '{name}'")
 
         isin = isin_parent.xpath('*[2]/text()').getall()
         wkn = isin_parent.xpath('*[4]/text()').getall()

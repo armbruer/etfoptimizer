@@ -66,8 +66,8 @@ def crawl_extraetf():
     """
     Runs a crawler for retrieving data from extraetf.com
     """
+    click.echo("Starting to crawl extraetf.com. Wait until you see the finish message. This might take a while ...")
     extraetf = Extraetf()
-    # TODO fix no logging output...
     extraetf.collect_data()
 
     click.echo('Finished crawling extraetf.com')
@@ -79,6 +79,7 @@ def crawl_justetf():
     Runs a crawler for retrieving data from justetf.com
     """
     try:
+        click.echo("Starting to crawl justetf.com. Wait until you see the finish message. This might take a while ...")
         run_crawler('justetf')
         click.echo('Finished crawling the justetf.com website')
     except:
@@ -175,5 +176,5 @@ def start_gui():
 
 
 if __name__ == '__main__':
-    set_log_level(logging.INFO)
+    set_log_level(logging.WARNING)
     etfopt()

@@ -1,5 +1,5 @@
-import logging
 import time
+import click
 
 import requests
 from sqlalchemy.exc import IntegrityError
@@ -41,7 +41,7 @@ class Extraetf():
             data = response.json()
             page = int(offset / limit + 1)
             results = data['results']
-            logging.info(f"Extracted etfs from page {page}!")
+            click.echo(f"Extracted etfs from page {page}!")
             self.__parse_page(results)
 
             if data['next'] is None:
@@ -81,7 +81,7 @@ class Extraetf():
         item['isin'] = result['isin']
         item['wkn'] = result['wkn']
         item['ter'] = result['ter']
-        logging.info(f"Parsing ETF '{result['isin']}'")
+        click.echo(f"Parsing ETF '{result['isin']}'")
 
         replication = detail_result['replication_methodology_first_level']
         repl_detail = detail_result['replication_methodology_second_level']
@@ -148,14 +148,14 @@ class Extraetf():
         try:
             current_data: Etf = self.session.query(Etf).filter_by(isin=etf.isin).first()
             if current_data is not None:
-                logging.info(f"Updating existing ETF {current_data.isin}")
+                click.echo(f"Updating existing ETF {current_data.isin}")
                 self.__update_item(current_data, etf)
 
             else:
                 self.session.add(etf)
                 self.session.commit()
         except:
-            logging.warning(f"Could not save data for {etf.isin}!")
+            click.echo(f"Could not save data for {etf.isin}!")
             self.session.rollback()
             raise
 
@@ -200,7 +200,7 @@ class Extraetf():
                 self.__save_item_category(cat_name, cat_type, isin)
 
         except:
-            logging.warning(f"Could not save data for {result['isin']}!")
+            click.echo(f"Could not save data for {result['isin']}!")
             self.session.rollback()
             raise
 
@@ -224,12 +224,12 @@ class Extraetf():
                     self.session.add(ic)
                     self.session.commit()
                 except IntegrityError:
-                    logging.warning(f"Could not insert category data for ETF with ISIN {isin} and category {cat_name} "
+                    click.echo(f"Could not insert category data for ETF with ISIN {isin} and category {cat_name} "
                                     f"as it already exists!")
                     self.session.rollback()
 
             else:
-                logging.error(f"No ID was found for item with category {cat_name}")
+                click.echo(f"No ID was found for item with category {cat_name}")
 
     def __add_category(self, cat_name, cat_type):
         """
