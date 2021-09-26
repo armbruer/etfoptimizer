@@ -11,6 +11,7 @@ setup(
         'scrapy>=2.5.0,<2.6',
         'selenium>=3.141.0,<4',
         'SQLAlchemy>=1.4.23,<1.5',
+        'psycopg2-binary>=2.9,<2.10',
         'sqlalchemy-utils>=0.37,<0.38',
         'pandas>=1.3.3,<1.4',
         'requests>=2.26,<2.27',
