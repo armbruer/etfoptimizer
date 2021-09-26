@@ -15,9 +15,10 @@ def save_history_api():
     Retrieves price data from Refinitiv for all available ISINs and writes it to database.
     """
 
+    create_table(sql_engine)
     start_date = get_latest_date()
-    get_timeseries(start_date)
-    get_data(start_date.replace('-', ''))
+    skipped_isins = get_timeseries(start_date)
+    get_data(start_date.replace('-', ''), skipped_isins)
 
 
 def get_timeseries(start_date):
@@ -28,6 +29,7 @@ def get_timeseries(start_date):
     __set_app_key()
     create_table(sql_engine)
     isins = __get_isins()
+    skipped_isins = __get_isins()
 
     for i in range(0, len(isins)):
         session = Session()
@@ -44,7 +46,8 @@ def get_timeseries(start_date):
                     price = data.values[j][0]
                     __write_history_value(isin, datapoint_date, price, session)
 
-                print('Finished writing get_data values for ' + isins[i])
+                skipped_isins.remove(isins[i])
+                print('Finished writing get_timeseries values for ' + isins[i])
             else:
                 logging.warning(f'No get_timeseries data available for ' + isins[i])
 
@@ -58,27 +61,28 @@ def get_timeseries(start_date):
 
         session.close()
 
+    return skipped_isins
 
-def get_data(start_date):
+
+def get_data(start_date, skipped_isins):
     """
     Extracts historic price data consisting of timestamps and prices for all available ISINs from the start date until today
     For some ISINs no data is available with the get_timeseries function (weird API behaviour)
     """
     __set_app_key()
     create_table(sql_engine)
-    isins = __get_skipped_isins()
 
-    for i in range(0, len(isins)):
+    for i in range(0, len(skipped_isins)):
         session = Session()
 
         try:
             today = date.today().strftime('%Y%m%d')
-            data = ek.get_data(isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'],
+            data = ek.get_data(skipped_isins[i], ['TR.CLOSEPRICE.date', 'TR.CLOSEPRICE'],
                                parameters={'SDate': start_date, 'EDate': today, 'Frq': 'D'})
             for value in data[0].values:
                 insert = True
                 if isinstance(value[2], float):
-                    isin = isins[i]
+                    isin = skipped_isins[i]
                     datapoint_date = datetime.strptime(value[1][0:10], '%Y-%m-%d').date()
                     price = value[2]
                 else:
@@ -87,7 +91,7 @@ def get_data(start_date):
                 if insert:
                     __write_history_value(isin, datapoint_date, price, session)
 
-            print('Finished writing get_data values for ' + isins[i])
+            print('Finished writing get_data values for ' + skipped_isins[i])
 
         except KeyboardInterrupt:
             session.rollback()
@@ -95,7 +99,7 @@ def get_data(start_date):
         except:
             # For some ISINs no data is available with the get_data function
             session.rollback()
-            logging.warning(f'No get_data values available for ' + isins[i])
+            logging.warning(f'No get_data values available for ' + skipped_isins[i])
 
         session.close()
 
@@ -122,19 +126,6 @@ def __get_isins() -> List[str]:
     for isin in isins_db:
         if not isin.etf_isin in isins:
             isins.append(isin.etf_isin)
-
-    return isins
-
-
-def __get_skipped_isins() -> List[str]:
-    """
-    Returns the ISINs for which no data is available with the get_timeseries function
-    """
-    isins = __get_isins()
-
-    session = Session()
-    for isin in session.query(EtfHistory.isin).distinct():
-        isins.remove(isin._data[0])
 
     return isins
 
