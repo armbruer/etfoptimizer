@@ -86,8 +86,7 @@ Deleting the static data is only required if you wish to rerun crawlers, as ment
 prone to change over long times. Deleting does not hurt, if you run this for the first time, as no previous data is available. 
 Please answer each question with `y` in order to download all static data. This might take up to 15 minutes.
 
-The dynamic data can be retrieved with either an Excel script or the API. However we strongly recommend using the latter of
-those options, which can be done by typing `python3 run.py import-history-api`. This will automatically write all available dynamic
+The dynamic data can be retrieved by typing `python3 run.py import-history`. This will automatically write all available dynamic
 data to the database. In case this command has already been run, the new data will be added to the already existing data. 
 
 Packaging Instructions
