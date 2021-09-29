@@ -222,13 +222,14 @@ def create_navbar():
     return navbar
 
 
-def create_figure(figure_id, width):
+def create_figure(figure_id, width, figure={}):
     """
     Creates a figure
     """
     graph = html.Center(html.Div([
         dcc.Graph(
-            id=figure_id + "_figure"
+            id=figure_id + "_figure",
+            figure=figure,
         )
     ],
         style={'width': width, 'display': 'inline-block', 'margin-top': "1%", 'margin-bottom': "1%",

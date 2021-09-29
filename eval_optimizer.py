@@ -10,24 +10,9 @@ from dash import dash
 from dateutil.relativedelta import relativedelta
 from db import Session
 from db.models import Etf
-from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data
+from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data, \
+    create_figure
 from optimizer import OptimizeMethod, PortfolioOptimizer
-
-
-def create_figure(figure_id, width, figure):
-    """
-    Creates a figure
-    """
-    graph = html.Center(html.Div([
-        dcc.Graph(
-            id=figure_id + "_figure",
-            figure=figure,
-        )
-    ],
-        style={'width': width, 'display': 'inline-block', 'margin-top': "1%", 'margin-bottom': "1%",
-               'margin-left': "1%", 'margin-right': "1%"}))
-
-    return graph
 
 
 def main():
