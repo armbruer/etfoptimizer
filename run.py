@@ -12,7 +12,7 @@ import config
 from db import sql_engine
 from db.table_manager import drop_static_tables
 from etf_history_api import save_history_api
-from etf_history_excel import save_history_excel
+#from etf_history_excel import save_history_excel
 from extraetf import Extraetf
 from frontend.app import run_gui
 from isin_extractor import extract_isins_from_db
@@ -97,21 +97,21 @@ def extract_isins(outfile):
     click.echo(f"Wrote ISINs into {outfile}")
 
 
-@etfopt.command()
-@click.option('--historyfile', '-h', default='etf_history.csv',
-              help='csv file containing etf history (output from Refinitiv)')
-@click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
-def import_history_excel(historyfile, isinfile):
-    """
-    Retrieves historic etf data from Refinitiv (Excel)
-    """
-    click.echo("Getting etf history...")
-    save_history_excel(historyfile, isinfile)
-    click.echo('Finished retrieving etf history')
+#@etfopt.command()
+#@click.option('--historyfile', '-h', default='etf_history.csv',
+              #help='csv file containing etf history (output from Refinitiv)')
+#@click.option('--isinfile', '-i', default='isin.csv', help='helper csv file containing isins')
+#def import_history_excel(historyfile, isinfile):
+    #"""
+    #Retrieves historic etf data from Refinitiv (Excel)
+    #"""
+    #click.echo("Getting etf history...")
+    #save_history_excel(historyfile, isinfile)
+    #click.echo('Finished retrieving etf history')
 
 
 @etfopt.command()
-def import_history_api():
+def import_history():
     """
     Retrieves historic etf data from Refinitiv (API)
     """
