@@ -620,10 +620,9 @@ def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, s
                                    prices['price'])
 
     # Calculate the value of the investment
-    days_all_available = min(prices['isin'].value_counts())
     prices = prices.drop(columns='isin')
+    prices = prices.groupby('datapoint_date', as_index=False).filter(lambda x: len(x) == len(relevant_isins))
     prices = prices.groupby('datapoint_date', as_index=False)['price'].sum()
-    prices = prices.iloc[prices.shape[0] - days_all_available:, :]
 
     # Show the result
     prices = prices.rename(columns={"price": "Wert", "datapoint_date": "Datum"})
