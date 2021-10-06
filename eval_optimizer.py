@@ -43,7 +43,7 @@ def main():
     msci_hist = msci_hist.drop(columns=['Low', 'High', 'Volume', 'Dividends', 'Open', 'Stock Splits'])
 
     price_on_first_day = msci_hist['Close'].values[0]
-    shares = total_portfolio_value / price_on_first_day # do not display rest
+    shares = total_portfolio_value / price_on_first_day  # do not display rest
     msci_hist['Close'] = np.where(True, msci_hist['Close'] * shares, msci_hist['Close'])
     msci_hist['Name'] = 'iShares MSCI World Index ETF'
     msci_hist.reset_index(inplace=True)

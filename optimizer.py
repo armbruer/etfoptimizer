@@ -83,10 +83,18 @@ class PortfolioOptimizer:
 
         self.ef = EfficientFrontier(mu, S)
 
-    def allocated_portfolio(self, total_portfolio_value, max_sharpe):
+    def allocate_portfolio_optimize(self, total_portfolio_value, max_sharpe):
+        """
+        Allocates the portfolio optimally utilizing integer programming
+        """
+        latest_prices = get_latest_prices(self.prices)
+        da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
+        return da.lp_portfolio(solver="GUROBI", reinvest=True)
+
+    def allocated_portfolio_greedy(self, total_portfolio_value, max_sharpe):
         """
         Allocates the portfolio according to the optimization result
         """
-        latest_prices = get_latest_prices(self.prices)  # TODO greedy allocation?
+        latest_prices = get_latest_prices(self.prices)
         da = DiscreteAllocation(max_sharpe, latest_prices, total_portfolio_value=total_portfolio_value)
-        return da.lp_portfolio()
+        return da.greedy_portfolio(reinvest=True)

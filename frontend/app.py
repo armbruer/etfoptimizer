@@ -331,16 +331,26 @@ def create_app(app):
             html.H3('Optimierung'),
             html.Div(optimization_divs_dropdown),
             html.Div(optimization_divs_input),
-            html.Div(
-                [dcc.Checklist(
-                    id='Historic Performance Checklist',
-                    options=[{'label': ' Historische Performance berechnen ', 'value': 'CHP'}],
-                    value=[],
-                    style={'display': 'inline', 'padding-right': 5}
-                ),
+            html.Div([
+                html.Div([dcc.Checklist(
+                        id='Historic Performance Checklist',
+                        options=[{'label': ' Historische Performance berechnen ', 'value': 'CHP'}],
+                        value=[],
+                        style={'display': 'inline-block', 'padding-right': 5}
+                    ),
+                        html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
+                                                  'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
+                ]),
+                html.Div([
+                    dcc.Checklist(
+                        id='Allocation Algorithm',
+                        options=[{'label': ' Greedy Allokationsalgorithmus verwenden ', 'value': 'CHP'}],
+                        value=[],
+                        style={'display': 'inline-block', 'padding-right': 5}
+                    ),
                     html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
                                               'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
-                ],
+                ])],
                 style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
                        'padding-right': 25}
             ),
@@ -425,11 +435,12 @@ def validate_number(betrag, zinssatz, cutoff):
            State('Betrag Input Field', 'value'),
            State('Risikofreier Zinssatz Input Field', 'value'),
            State('Cutoff Input Field', 'value'),
-           State('Historic Performance Checklist', 'value')],
+           State('Historic Performance Checklist', 'value'),
+           State('Allocation Algorithm', 'value')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
-                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff, create_hist_perf):
+                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff, create_hist_perf, alloc_algorithm):
     """
     Responsible for updating the UI when "Optimieren" button is pressed.
 
@@ -494,7 +505,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
     hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
-                                    three_years_ago, now)
+                                    three_years_ago, now, alloc_algorithm)
     dt_data = fill_datatable_allocation(res, rounding)
     session.close()
 
@@ -516,7 +527,7 @@ def preprocess_isin_price_data(isins, session, start_date):
     return to_keep
 
 
-def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding):
+def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm):
     """
     Returns the allocation result for the optimization and performs data formatting
     """
@@ -527,7 +538,10 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding):
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
 
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
-    alloc, leftover = opt.allocated_portfolio(betrag, max_sharpe)
+    if alloc_algorithm:
+        alloc, leftover = opt.allocate_portfolio_optimize(betrag, max_sharpe)
+    else:
+        alloc, leftover = opt.allocated_portfolio_greedy(betrag, max_sharpe)
     alloc = [(k, v) for k, v in alloc.items()]
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = res.join(etf_quantities.set_index('isin'))
@@ -535,15 +549,15 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding):
     return leftover, res
 
 
-def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
-                      start_date, end_date):
+def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff,
+                      zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
             hist_figure = show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
-                                           start_date, end_date)
+                                           start_date, end_date, alloc_algorithm)
         except:
             hist_figure = show_empty_hist_figure(start_date, end_date)
             hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper',
@@ -553,11 +567,12 @@ def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cu
     return hist_figure
 
 
-def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session, start_date, end_date):
+def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff,
+                     zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
     six_years_ago = end_date - relativedelta(years=6)
     opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, opt_method)
     opt_hist.prepare_optmizer()
-    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date)
+    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date, alloc_algorithm)
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure
 
@@ -595,7 +610,8 @@ def fill_datatable_allocation(res, rounding):
     return dt_data
 
 
-def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date):
+def prepare_hist_data(etf_names, opt_hist, betrag, cutoff,
+                      zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Prepares the historical data for displaying in a figure
 
@@ -603,7 +619,7 @@ def prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, s
     during the last three years using the data from 4-6 years ago.
     """
 
-    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz, rounding)
+    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
     prices = get_prices(relevant_isins, session, start_date, end_date)
 
