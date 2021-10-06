@@ -65,7 +65,7 @@ def main():
             opt_hist = PortfolioOptimizer(preprocessed_isin, start_date, end_date, session, opt_method)
             opt_hist.prepare_optmizer()
             prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
-                                       end_date, end_date_invest)
+                                       end_date, end_date_invest, True)
             price_dfs.append(prices)
             total_portfolio_value = price_dfs[len(price_dfs) - 1].iloc[-1][1]
 

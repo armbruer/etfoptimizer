@@ -348,8 +348,8 @@ def create_app(app):
                         value=[],
                         style={'display': 'inline-block', 'padding-right': 5}
                     ),
-                    html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
-                                              'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
+                    html.Abbr("\u003F", title='Bestimmt ob der Greedy Allokationsalgorithmus verwendet werden soll.\n'
+                                              'Per default wird die Allokation mithilfe von Integer Programming optimal berechnet.'),
                 ])],
                 style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
                        'padding-right': 25}
@@ -500,7 +500,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding)
+    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm)
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
@@ -538,7 +538,7 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_a
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
 
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
-    if alloc_algorithm:
+    if not alloc_algorithm:
         alloc, leftover = opt.allocate_portfolio_optimize(betrag, max_sharpe)
     else:
         alloc, leftover = opt.allocated_portfolio_greedy(betrag, max_sharpe)
