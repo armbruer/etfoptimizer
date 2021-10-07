@@ -16,27 +16,27 @@ from db.models import EtfHistory
 
 
 @unique
-class OptimizeMethod(Enum):
+class ReturnRiskModel(Enum):
     """
-    Different Optimizers
+    Different combinations of models for the expected return and risk of a portfolio
     """
     MEAN_VARIANCE = 0
     CAPM_SEMICOVARIANCE = 1
     EMA_VARIANCE = 2
 
     @staticmethod
-    def from_str(optimizer: str):
+    def from_str(return_risk_model: str):
         """
-        Converts from str to Optimizer
+        Converts from str to ReturnRiskModel
         """
-        if optimizer == 'Mittelwert/Varianz':
-            return OptimizeMethod.MEAN_VARIANCE
-        elif optimizer == 'CAPM/Semikovarianz':
-            return OptimizeMethod.CAPM_SEMICOVARIANCE
-        elif optimizer == 'Exponentieller Mittelwert/Varianz':
-            return OptimizeMethod.EMA_VARIANCE
+        if return_risk_model == 'Mittelwert/Varianz':
+            return ReturnRiskModel.MEAN_VARIANCE
+        elif return_risk_model == 'CAPM/Semikovarianz':
+            return ReturnRiskModel.CAPM_SEMICOVARIANCE
+        elif return_risk_model == 'Exponentieller Mittelwert/Varianz':
+            return ReturnRiskModel.EMA_VARIANCE
         else:
-            raise ValueError(f"Unknown value for Optimizer enum: {optimizer}")
+            raise ValueError(f"Unknown value for ReturnRiskModel enum: {return_risk_model}")
 
 
 @dataclass
@@ -49,7 +49,7 @@ class PortfolioOptimizer:
     start_date: date
     end_date: date
     session: Session
-    optimize_method: OptimizeMethod = OptimizeMethod.MEAN_VARIANCE
+    return_risk_model: ReturnRiskModel = ReturnRiskModel.MEAN_VARIANCE
 
     def __post_init__(self):
         query = self.session.query(EtfHistory.isin, EtfHistory.datapoint_date, EtfHistory.price) \
@@ -66,15 +66,15 @@ class PortfolioOptimizer:
         """
         Prepares the chosen optimizer on the retrieved data
         """
-        if self.optimize_method is OptimizeMethod.MEAN_VARIANCE:
+        if self.return_risk_model is ReturnRiskModel.MEAN_VARIANCE:
             mu = mean_historical_return(self.prices)
             mu = np.clip(mu, 0, 1)
             S = CovarianceShrinkage(self.prices).ledoit_wolf()
-        elif self.optimize_method is OptimizeMethod.CAPM_SEMICOVARIANCE:
+        elif self.return_risk_model is ReturnRiskModel.CAPM_SEMICOVARIANCE:
             mu = capm_return(self.prices)
             mu = np.clip(mu, 0, 1)
             S = semicovariance(self.prices)
-        elif self.optimize_method is OptimizeMethod.EMA_VARIANCE:
+        elif self.return_risk_model is ReturnRiskModel.EMA_VARIANCE:
             mu = ema_historical_return(self.prices)
             mu = np.clip(mu, 0, 1)
             S = CovarianceShrinkage(self.prices).ledoit_wolf()

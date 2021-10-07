@@ -18,7 +18,7 @@ from db import Session, sql_engine
 from db.models import Etf, EtfCategory, EtfHistory, IsinCategory
 from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
-from optimizer import PortfolioOptimizer, OptimizeMethod
+from optimizer import PortfolioOptimizer, ReturnRiskModel
 
 app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
@@ -147,8 +147,7 @@ def create_button(button_id, button_text):
             n_clicks=0)
     ],
         id=button_id + ' Button Div',
-        style={'display': 'block', 'padding-top': 20, 'padding-bottom': 20, 'padding-left': 25,
-               'padding-right': 25})
+        style={'display': 'block'})
 
     return button
 
@@ -275,11 +274,35 @@ def create_tabs():
     return tabs
 
 
+def create_checkbox(id, label, tooltip, checked=False):
+    """
+    Creates a checkbox used for enabling or disabling
+    """
+    return html.Div([
+        dbc.FormGroup(
+            [
+                dbc.Checkbox(
+                    id=id,
+                    style={'margin-right': 5}
+                ),
+                dbc.Label(
+                    label,
+                    html_for=id,
+                    style={'padding-right': 5}
+                ),
+            ],
+            style={'display': 'inline-block'},
+            check=checked,
+        ),
+        html.Abbr("\u003F", title=tooltip),
+    ])
+
+
 def create_app(app):
     """
     Combines the elements into the user interface
     """
-    optimizer_methods = [('Mittelwert/Varianz', 'Mittelwert/Varianz'),
+    rr_models = [('Mittelwert/Varianz', 'Mittelwert/Varianz'),
                          ('CAPM/Semikovarianz', 'CAPM/Semikovarianz'),
                          ('Exponentieller Mittelwert/Varianz', 'Exponentieller Mittelwert/Varianz')]
 
@@ -296,7 +319,7 @@ def create_app(app):
         'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
 
     optimization_divs_dropdown = []
-    optimization_divs_dropdown.append(create_dropdown('Methode', optimizer_methods, '40%', False, 'Mittelwert/Varianz'))
+    optimization_divs_dropdown.append(create_dropdown('Rendite und Risiko Modell', rr_models, '40%', False, 'Mittelwert/Varianz'))
 
     optimization_divs_input = []
     optimization_divs_input.append(
@@ -310,6 +333,13 @@ def create_app(app):
         create_input_field('Cutoff', 'Cutoff',
                            'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)',
                            '20%', 'text', 'cutoff'))
+
+    enable_hist_checklist = create_checkbox('Historic Performance Checklist', ' Historische Performance berechnen ',
+                                        'Bestimmt ob historische Performance berechnet werden soll.\n'
+                                        'Falls aktiviert und viele ETFs ausgewählt sind, wird sich die Laufzeit spürbar verschlechtern.')
+    enable_greedy_allocation = create_checkbox('Allocation Algorithm', ' Greedy Allokationsalgorithmus verwenden ',
+                                                'Bestimmt ob der Greedy Allokationsalgorithmus verwendet werden soll.\n'
+                                                'Per default wird die Allokation mithilfe von Integer Programming optimal berechnet.')
 
     output_divs = []
     output_divs.append(create_performance_info())
@@ -331,26 +361,7 @@ def create_app(app):
             html.H3('Optimierung'),
             html.Div(optimization_divs_dropdown),
             html.Div(optimization_divs_input),
-            html.Div([
-                html.Div([dcc.Checklist(
-                        id='Historic Performance Checklist',
-                        options=[{'label': ' Historische Performance berechnen ', 'value': 'CHP'}],
-                        value=[],
-                        style={'display': 'inline-block', 'padding-right': 5}
-                    ),
-                        html.Abbr("\u003F", title='Bestimmt ob historische Performance berechnet werden soll.\n'
-                                                  'Bei vielen ETFs wird sich die Laufzeit spürbar verschlechtern.'),
-                ]),
-                html.Div([
-                    dcc.Checklist(
-                        id='Allocation Algorithm',
-                        options=[{'label': ' Greedy Allokationsalgorithmus verwenden ', 'value': 'CHP'}],
-                        value=[],
-                        style={'display': 'inline-block', 'padding-right': 5}
-                    ),
-                    html.Abbr("\u003F", title='Bestimmt ob der Greedy Allokationsalgorithmus verwendet werden soll.\n'
-                                              'Per default wird die Allokation mithilfe von Integer Programming optimal berechnet.'),
-                ])],
+            html.Div([enable_hist_checklist, enable_greedy_allocation],
                 style={'display': 'inline-block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
                        'padding-right': 25}
             ),
@@ -431,16 +442,16 @@ def validate_number(betrag, zinssatz, cutoff):
     state=[State(((cat_type.replace(' ', '')).lower()).capitalize() + ' Dropdown', 'value') for cat_type in
            category_types] +
           [State('Zusätzliche ISINs Dropdown', 'value'),
-           State('Methode Dropdown', 'value'),
+           State('Rendite und Risiko Modell Dropdown', 'value'),
            State('Betrag Input Field', 'value'),
            State('Risikofreier Zinssatz Input Field', 'value'),
            State('Cutoff Input Field', 'value'),
-           State('Historic Performance Checklist', 'value'),
-           State('Allocation Algorithm', 'value')],
+           State('Historic Performance Checklist', 'checked'),
+           State('Allocation Algorithm', 'checked')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
-                  laufzeit, rating, extra_isins, methode, betrag, zinssatz, cutoff, create_hist_perf, alloc_algorithm):
+                  laufzeit, rating, extra_isins, risk_return_model, betrag, zinssatz, cutoff, create_hist_perf, alloc_algorithm):
     """
     Responsible for updating the UI when "Optimieren" button is pressed.
 
@@ -485,8 +496,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(years=3)
     isins = preprocess_isin_price_data(isins, session, three_years_ago)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
-    opt_method = OptimizeMethod.from_str(methode)
-    opt = PortfolioOptimizer(isins, three_years_ago, now, session, opt_method)
+    rr_model = ReturnRiskModel.from_str(risk_return_model)
+    opt = PortfolioOptimizer(isins, three_years_ago, now, session, rr_model)
 
     if opt.prices.empty:
         show_error[-2] = 'Die Datenbank scheint keine Preisdaten für die ausgewählten ISINs zu enthalten :('
@@ -504,7 +515,7 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
-    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
+    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, rr_model, betrag, cutoff, zinssatz, rounding, session,
                                     three_years_ago, now, alloc_algorithm)
     dt_data = fill_datatable_allocation(res, rounding)
     session.close()
@@ -549,14 +560,14 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_a
     return leftover, res
 
 
-def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cutoff,
+def display_hist_perf(create_hist_perf, isins, etf_names, rr_model, betrag, cutoff,
                       zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
-            hist_figure = show_hist_figure(isins, etf_names, opt_method, betrag, cutoff, zinssatz, rounding, session,
+            hist_figure = show_hist_figure(isins, etf_names, rr_model, betrag, cutoff, zinssatz, rounding, session,
                                            start_date, end_date, alloc_algorithm)
         except:
             hist_figure = show_empty_hist_figure(start_date, end_date)
@@ -567,10 +578,14 @@ def display_hist_perf(create_hist_perf, isins, etf_names, opt_method, betrag, cu
     return hist_figure
 
 
-def show_hist_figure(isins, etf_names, opt_method, betrag, cutoff,
+def show_hist_figure(isins, etf_names, rr_model, betrag, cutoff,
                      zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
+    """
+    Shows the history figure, which uses allocation weights calculated from optimising 3-6 years ago and uses price data
+    from 0-3 years ago.
+    """
     six_years_ago = end_date - relativedelta(years=6)
-    opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, opt_method)
+    opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, rr_model)
     opt_hist.prepare_optmizer()
     prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date, alloc_algorithm)
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])

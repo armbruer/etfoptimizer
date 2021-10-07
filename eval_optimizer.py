@@ -12,7 +12,7 @@ from db import Session
 from db.models import Etf
 from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data, \
     create_figure
-from optimizer import OptimizeMethod, PortfolioOptimizer
+from optimizer import ReturnRiskModel, PortfolioOptimizer
 
 
 def main():
@@ -23,7 +23,7 @@ def main():
     risk_free_rate = 0.02
     cutoff = 0.00001
     period_length_in_years = 3
-    opt_methods = [OptimizeMethod.MEAN_VARIANCE]
+    opt_methods = [ReturnRiskModel.MEAN_VARIANCE]
 
     # open session, get ISINs and names
     session = Session()
