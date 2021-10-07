@@ -1,13 +1,13 @@
-import dash_core_components as dcc
+from datetime import datetime
+
 import dash_html_components as html
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import yfinance as yf
-import numpy as np
-
-from datetime import datetime
 from dash import dash
 from dateutil.relativedelta import relativedelta
+
 from db import Session
 from db.models import Etf
 from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data, \
@@ -18,7 +18,7 @@ from optimizer import OptimizeMethod, PortfolioOptimizer
 def main():
     # define parameters
     total_portfolio_value = 100000
-    total_years = 10
+    total_years = 7
     rounding = 5
     risk_free_rate = 0.02
     cutoff = 0.00001
@@ -55,7 +55,7 @@ def main():
 
         price_dfs = []
         for years in range(total_years, -1, -1):
-            start_date = datetime.now() - relativedelta(years=years)
+            start_date = datetime.now() - relativedelta(years=years + period_length_in_years)
             end_date = start_date + relativedelta(years=period_length_in_years)
             end_date_invest = end_date + relativedelta(years=1)
             if end_date_invest > datetime.now():
