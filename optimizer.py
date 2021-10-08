@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import date
-from enum import Enum, unique
+from enum import unique, IntEnum
 from typing import List
 
 import numpy as np
@@ -16,7 +16,7 @@ from db.models import EtfHistory
 
 
 @unique
-class ReturnRiskModel(Enum):
+class ReturnRiskModel(IntEnum):
     """
     Different combinations of models for the expected return and risk of a portfolio
     """
@@ -24,19 +24,15 @@ class ReturnRiskModel(Enum):
     CAPM_SEMICOVARIANCE = 1
     EMA_VARIANCE = 2
 
-    @staticmethod
-    def from_str(return_risk_model: str):
-        """
-        Converts from str to ReturnRiskModel
-        """
-        if return_risk_model == 'Mittelwert/Varianz':
-            return ReturnRiskModel.MEAN_VARIANCE
-        elif return_risk_model == 'CAPM/Semikovarianz':
-            return ReturnRiskModel.CAPM_SEMICOVARIANCE
-        elif return_risk_model == 'Exponentieller Mittelwert/Varianz':
-            return ReturnRiskModel.EMA_VARIANCE
-        else:
-            raise ValueError(f"Unknown value for ReturnRiskModel enum: {return_risk_model}")
+
+@unique
+class Optimizer(IntEnum):
+    """
+    Different combinations of models for the expected return and risk of a portfolio
+    """
+    MAX_SHARPE = 0
+    EFFICIENT_RETURN = 1
+    EFFICIENT_RISK = 2
 
 
 @dataclass
@@ -64,7 +60,7 @@ class PortfolioOptimizer:
 
     def prepare_optmizer(self):
         """
-        Prepares the chosen optimizer on the retrieved data
+        Prepares the optimizer according to the chosen ReturnRiskModel on the retrieved data
         """
         if self.return_risk_model is ReturnRiskModel.MEAN_VARIANCE:
             mu = mean_historical_return(self.prices)
@@ -79,7 +75,7 @@ class PortfolioOptimizer:
             mu = np.clip(mu, 0, 1)
             S = CovarianceShrinkage(self.prices).ledoit_wolf()
         else:
-            raise ValueError("optimize_method must not be None")
+            raise ValueError("return_risk_model must not be None")
 
         self.ef = EfficientFrontier(mu, S)
 

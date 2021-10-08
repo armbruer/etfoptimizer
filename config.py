@@ -7,7 +7,8 @@ from pathlib import Path
 config_dir = Path(user_config_dir(appname="etfoptimizer"))
 config_file = Path(config_dir, 'etfoptimizer.ini')
 
-opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'total_portfolio_value': '100000'}
+opt_entries = {'cutoff': '0.00001', 'rounding': '5', 'risk_free_rate': '0.02', 'target_risk': '0.1',
+               'target_return': '0.05', 'total_portfolio_value': '100000'}
 db_entries = {'dialect': 'postgresql', 'driver': 'psycopg2', 'username': '<username>',
               'password': '<password>', 'host': 'localhost', 'port': '5432', 'database': 'etf_optimization'}
 hist_entries = {'app_key': '<key>'}

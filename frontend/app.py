@@ -18,7 +18,7 @@ from db import Session, sql_engine
 from db.models import Etf, EtfCategory, EtfHistory, IsinCategory
 from db.table_manager import create_table
 from frontend.plotting import plot_efficient_frontier
-from optimizer import PortfolioOptimizer, ReturnRiskModel
+from optimizer import PortfolioOptimizer, ReturnRiskModel, Optimizer
 
 app = dash.Dash(__name__)
 category_types = ['Asset Klasse', 'Anlageart', 'Region', 'Land', 'Währung', 'Sektor', 'Rohstoffklasse', 'Strategie',
@@ -62,7 +62,7 @@ def extract_categories(category_types):
     return extracted_categories
 
 
-def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple, default_value=None):
+def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple, default_value=None, sort_by_key=False):
     """
     Create a dropdown used for category/ISIN filtering.
     """
@@ -71,8 +71,7 @@ def create_dropdown(dropdown_id, dropdown_data, width, dropdown_multiple, defaul
         html.Label(dropdown_id + ':'),
         dcc.Dropdown(
             id=dropdown_id + ' Dropdown',
-            options=[{'value': data_id, 'label': data_name} for data_id, data_name in
-                     sorted(dropdown_data, key=lambda x: x[1])],
+            options=dropdown_data,
             placeholder=dropdown_id,
             searchable=True,
             clearable=True,
@@ -302,37 +301,44 @@ def create_app(app):
     """
     Combines the elements into the user interface
     """
-    rr_models = [('Mittelwert/Varianz', 'Mittelwert/Varianz'),
-                         ('CAPM/Semikovarianz', 'CAPM/Semikovarianz'),
-                         ('Exponentieller Mittelwert/Varianz', 'Exponentieller Mittelwert/Varianz')]
+    rr_models = [('Mittelwert/Varianz', ReturnRiskModel.MEAN_VARIANCE),
+                         ('CAPM/Semikovarianz', ReturnRiskModel.CAPM_SEMICOVARIANCE),
+                         ('Exponentieller Mittelwert/Varianz', ReturnRiskModel.EMA_VARIANCE)]
+
+    optimizer_methods = [('Max Sharpe', Optimizer.MAX_SHARPE),
+                         ('Effiziente Rendite', Optimizer.EFFICIENT_RETURN),
+                         ('Effizientes Risiko', Optimizer.EFFICIENT_RISK)]
 
     categories = extract_categories(category_types)
 
     category_divs = []
     for category_type in category_types:
-        category_divs.append(
-            create_dropdown(((category_type.replace(' ', '')).lower()).capitalize(), categories[category_type], '50%',
-                            True))
+        cat_id = ((category_type.replace(' ', '')).lower()).capitalize()
+        category_values = [{'value': data_id, 'label': data_name}
+                           for data_id, data_name in sorted(categories[category_type], key=lambda x: x[1])]
+        category_divs.append(create_dropdown(cat_id, category_values, '50%', True))
+
     isin_tuples = extract_isin_tuples()
     category_divs.append(create_dropdown_tool_tip('Zusätzliche ISINs', isin_tuples, (
         'ISINs welche zusätzlich und unabhängig von den ausgewählten Kategorien verwendet werden sollen.\n'
         'Wurden keine anderen Kategorien ausgewählt, so werden ausschließlich diese ISINs verwendet.'), '50%', True))
 
-    optimization_divs_dropdown = []
-    optimization_divs_dropdown.append(create_dropdown('Rendite und Risiko Modell', rr_models, '40%', False, 'Mittelwert/Varianz'))
+    optimization_divs_dropdown = [
+        create_dropdown('Rendite und Risiko Modell', to_dropdown_format(rr_models, lambda x: x[0]), '30%', False, ReturnRiskModel.MEAN_VARIANCE, True),
+        create_dropdown('Optimierungsmethode', to_dropdown_format(optimizer_methods, lambda x: x[0]), '30%', False, Optimizer.MAX_SHARPE, True),
+        create_input_field('Zielrisiko', 'Zielrisiko', '', '20%', 'text', 'target_risk'),
+        create_input_field('Zielrendite', 'Zielrendite', '', '20%', 'text', 'target_return'),
+        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz',
+                           'Rendite einer Anlage ohne Risiko.', '20%',
+                           'text', 'risk_free_rate')]
 
-    optimization_divs_input = []
-    optimization_divs_input.append(
-        create_input_field('Betrag', 'Investitionsbetrag (€)',
-                           'Der Gesamtbetrag in Euro der in einem Portfolio optimal angelegt werden soll.', '20%',
-                           'text', 'total_portfolio_value'))
-    optimization_divs_input.append(
-        create_input_field('Risikofreier Zinssatz', 'Risikofreier Zinssatz', 'Rendite einer Anlage ohne Risiko.', '20%',
-                           'text', 'risk_free_rate'))
-    optimization_divs_input.append(
-        create_input_field('Cutoff', 'Cutoff',
-                           'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)',
-                           '20%', 'text', 'cutoff'))
+    optimization_divs_input = [create_input_field('Betrag', 'Investitionsbetrag (€)',
+                                                  'Der Gesamtbetrag in Euro der in einem Portfolio optimal angelegt werden soll.',
+                                                  '20%',
+                                                  'text', 'total_portfolio_value'),
+                               create_input_field('Cutoff', 'Cutoff',
+                                                  'Werte die kleiner als Cutoff sind werden in der Portfolio Allokation nicht berücksichtigt (werden auf 0 gesetzt)',
+                                                  '20%', 'text', 'cutoff')]
 
     enable_hist_checklist = create_checkbox('Historic Performance Checklist', ' Historische Performance berechnen ',
                                         'Bestimmt ob historische Performance berechnet werden soll.\n'
@@ -341,9 +347,7 @@ def create_app(app):
                                                 'Bestimmt ob der Greedy Allokationsalgorithmus verwendet werden soll.\n'
                                                 'Per default wird die Allokation mithilfe von Integer Programming optimal berechnet.')
 
-    output_divs = []
-    output_divs.append(create_performance_info())
-    output_divs.append(create_tabs())
+    output_divs = [create_performance_info(), create_tabs()]
 
     inner_style = {'margin-top': "2.5%", 'margin-bottom': "2.5%", 'margin-left': "12.5%", 'margin-right': "12.5%",
                    'width': '75%', 'display': 'inline-block'}
@@ -396,32 +400,68 @@ def get_isins_from_filters(categories: List[int], extra_isins: List[str], sessio
     return [isin for (isin,) in rows]  # convert list of tuples to list of atomics
 
 
+@app.callback([Output('Zielrisiko Input Field Div', 'style'),
+               Output('Zielrendite Input Field Div', 'style'),
+               Output('Risikofreier Zinssatz Input Field Div', 'style')],
+              [Input('Optimierungsmethode Dropdown', 'value')])
+def update_opt_method(opt_method):
+    """
+    If certain optimizers are chosen the respective input fields will be shown
+    """
+    rest = {'width': '20%', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+            'padding-right': 25}
+    show = {'display': '', **rest}
+    hide = {'display': 'none', **rest}
+
+    if opt_method == Optimizer.EFFICIENT_RISK:
+        return [show, hide, hide]
+    elif opt_method == Optimizer.EFFICIENT_RETURN:
+        return [hide, show, hide]
+    elif opt_method == Optimizer.MAX_SHARPE:
+        return [hide, hide, show]
+
+    return [hide, hide, hide]
+
+
 @app.callback(
     [Output('Betrag Input Field', 'valid'),
      Output('Risikofreier Zinssatz Input Field', 'valid'),
      Output('Cutoff Input Field', 'valid'),
+     Output('Zielrendite Input Field', 'valid'),
+     Output('Zielrisiko Input Field', 'valid'),
      Output('Betrag Input Field', 'invalid'),
      Output('Risikofreier Zinssatz Input Field', 'invalid'),
-     Output('Cutoff Input Field', 'invalid')],
+     Output('Cutoff Input Field', 'invalid'),
+     Output('Zielrendite Input Field', 'invalid'),
+     Output('Zielrisiko Input Field', 'invalid')],
     [Input('Betrag Input Field', 'value'),
      Input('Risikofreier Zinssatz Input Field', 'value'),
-     Input('Cutoff Input Field', 'value')]
+     Input('Cutoff Input Field', 'value'),
+     Input('Zielrendite Input Field', 'value'),
+     Input('Zielrisiko Input Field', 'value')]
 )
-def validate_number(betrag, zinssatz, cutoff):
-    values = [betrag, zinssatz, cutoff]
-    res = [None, None, None, None, None, None]
+def validate_number(betrag, zinssatz, cutoff, target_return, target_risk):
+    """
+    This is used to show immediate feedback when a user enters a wrong number into an input field
+    """
+    values = [betrag, zinssatz, cutoff, target_return, target_risk]
+    res = [None, None, None, None, None, None, None, None, None, None]
     for i in range(0, len(values)):
         if values[i]:
             try:
-                if i >= 1:
-                    float(values[i])
+                if i == 0:
+                    number = int(values[i])
                 else:
-                    int(values[i])
-                res[i] = True
-                res[i + 3] = False
+                    number = float(values[i])
+                if number < 0:
+                    res[i] = False
+                    res[i + 5] = True
+                else:
+                    res[i] = True
+                    res[i + 5] = False
             except ValueError:
                 res[i] = False
-                res[i + 3] = True
+                res[i + 5] = True
 
     return res
 
@@ -443,15 +483,19 @@ def validate_number(betrag, zinssatz, cutoff):
            category_types] +
           [State('Zusätzliche ISINs Dropdown', 'value'),
            State('Rendite und Risiko Modell Dropdown', 'value'),
+           Input('Optimierungsmethode Dropdown', 'value'),
            State('Betrag Input Field', 'value'),
            State('Risikofreier Zinssatz Input Field', 'value'),
+           State('Zielrendite Input Field', 'value'),
+           State('Zielrisiko Input Field', 'value'),
            State('Cutoff Input Field', 'value'),
            State('Historic Performance Checklist', 'checked'),
            State('Allocation Algorithm', 'checked')],
     prevent_initial_call=True
 )
 def update_output(num_clicks, assetklasse, anlageart, region, land, währung, sektor, rohstoffklasse, strategie,
-                  laufzeit, rating, extra_isins, risk_return_model, betrag, zinssatz, cutoff, create_hist_perf, alloc_algorithm):
+                  laufzeit, rating, extra_isins, rr_model, opt_method, betrag, zinssatz,
+                  target_return, target_risk, cutoff, create_hist_perf, alloc_algorithm):
     """
     Responsible for updating the UI when "Optimieren" button is pressed.
 
@@ -496,7 +540,6 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(years=3)
     isins = preprocess_isin_price_data(isins, session, three_years_ago)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
-    rr_model = ReturnRiskModel.from_str(risk_return_model)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session, rr_model)
 
     if opt.prices.empty:
@@ -511,12 +554,12 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    leftover, res = get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm)
+    leftover, res = get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm)
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
-    hist_figure = display_hist_perf(create_hist_perf, isins, etf_names, rr_model, betrag, cutoff, zinssatz, rounding, session,
-                                    three_years_ago, now, alloc_algorithm)
+    hist_figure = display_hist_perf(opt_method, create_hist_perf, isins, etf_names, rr_model, betrag, cutoff,
+                                    zinssatz, target_return, target_risk, rounding, session, three_years_ago, now, alloc_algorithm)
     dt_data = fill_datatable_allocation(res, rounding)
     session.close()
 
@@ -538,21 +581,28 @@ def preprocess_isin_price_data(isins, session, start_date):
     return to_keep
 
 
-def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm):
+def get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm):
     """
     Returns the allocation result for the optimization and performs data formatting
     """
 
-    max_sharpe = opt.ef.max_sharpe(risk_free_rate=zinssatz)
+    if opt_method == Optimizer.MAX_SHARPE:
+        opt_res = opt.ef.max_sharpe(risk_free_rate=zinssatz)
+    elif opt_method == Optimizer.EFFICIENT_RISK:
+        opt_res = opt.ef.efficient_risk(target_volatility=target_risk)
+    elif opt_method == Optimizer.EFFICIENT_RETURN:
+        opt_res = opt.ef.efficient_return(target_return=target_return)
+    else:
+        raise ValueError('Unknown Optimizer')
 
     weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=rounding).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
 
     res = etf_names.set_index('isin').join(etf_weights.set_index('isin'))
     if not alloc_algorithm:
-        alloc, leftover = opt.allocate_portfolio_optimize(betrag, max_sharpe)
+        alloc, leftover = opt.allocate_portfolio_optimize(betrag, opt_res)
     else:
-        alloc, leftover = opt.allocated_portfolio_greedy(betrag, max_sharpe)
+        alloc, leftover = opt.allocated_portfolio_greedy(betrag, opt_res)
     alloc = [(k, v) for k, v in alloc.items()]
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = res.join(etf_quantities.set_index('isin'))
@@ -560,15 +610,15 @@ def get_alloc_result(opt, etf_names, betrag, cutoff, zinssatz, rounding, alloc_a
     return leftover, res
 
 
-def display_hist_perf(create_hist_perf, isins, etf_names, rr_model, betrag, cutoff,
-                      zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
+def display_hist_perf(opt_method, create_hist_perf, isins, etf_names, rr_model, betrag, cutoff,
+                      zinssatz, target_return, target_risk, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Depending on create_hist_perf the history figure is displayed or not
     """
     if create_hist_perf:
         try:
-            hist_figure = show_hist_figure(isins, etf_names, rr_model, betrag, cutoff, zinssatz, rounding, session,
-                                           start_date, end_date, alloc_algorithm)
+            hist_figure = show_hist_figure(opt_method, isins, etf_names, rr_model, betrag, cutoff, zinssatz, target_return, target_risk,
+                                           rounding, session, start_date, end_date, alloc_algorithm)
         except:
             hist_figure = show_empty_hist_figure(start_date, end_date)
             hist_figure.add_annotation(text='Nicht genügend Daten für historische Performance.', xref='paper',
@@ -578,8 +628,8 @@ def display_hist_perf(create_hist_perf, isins, etf_names, rr_model, betrag, cuto
     return hist_figure
 
 
-def show_hist_figure(isins, etf_names, rr_model, betrag, cutoff,
-                     zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
+def show_hist_figure(opt_method, isins, etf_names, rr_model, betrag, cutoff,
+                     zinssatz, target_return, target_risk, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Shows the history figure, which uses allocation weights calculated from optimising 3-6 years ago and uses price data
     from 0-3 years ago.
@@ -587,7 +637,8 @@ def show_hist_figure(isins, etf_names, rr_model, betrag, cutoff,
     six_years_ago = end_date - relativedelta(years=6)
     opt_hist = PortfolioOptimizer(isins, six_years_ago, start_date, session, rr_model)
     opt_hist.prepare_optmizer()
-    prices = prepare_hist_data(etf_names, opt_hist, betrag, cutoff, zinssatz, rounding, session, start_date, end_date, alloc_algorithm)
+    prices = prepare_hist_data(opt_method, etf_names, opt_hist, betrag, cutoff, zinssatz,
+                               target_return, target_risk, rounding, session, start_date, end_date, alloc_algorithm)
     hist_figure = px.line(prices, x=prices['Datum'], y=prices['Wert'])
     return hist_figure
 
@@ -625,8 +676,8 @@ def fill_datatable_allocation(res, rounding):
     return dt_data
 
 
-def prepare_hist_data(etf_names, opt_hist, betrag, cutoff,
-                      zinssatz, rounding, session, start_date, end_date, alloc_algorithm):
+def prepare_hist_data(opt_method, etf_names, opt_hist, betrag, cutoff,
+                      zinssatz, target_return, target_risk, rounding, session, start_date, end_date, alloc_algorithm):
     """
     Prepares the historical data for displaying in a figure
 
@@ -634,7 +685,7 @@ def prepare_hist_data(etf_names, opt_hist, betrag, cutoff,
     during the last three years using the data from 4-6 years ago.
     """
 
-    _, res = get_alloc_result(opt_hist, etf_names, betrag, cutoff, zinssatz, rounding, alloc_algorithm)
+    _, res = get_alloc_result(opt_hist, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
     prices = get_prices(relevant_isins, session, start_date, end_date)
 
@@ -684,6 +735,13 @@ def get_relevant_isins(res):
             relevant_isin_weights[row['isin']] = row['weight']
 
     return relevant_isin_weights, relevant_isins
+
+
+def to_dropdown_format(list, sort_function):
+    """
+    Converts a list of tuples to the required list format for dropdowns
+    """
+    return [{'value': int(data_id), 'label': data_name} for data_name, data_id in sorted(list, key=sort_function)]
 
 
 def flatten_categories(cats_list):
