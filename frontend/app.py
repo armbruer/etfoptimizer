@@ -515,6 +515,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
         betrag = int(betrag)
         cutoff = float(cutoff)
         zinssatz = float(zinssatz)
+        target_risk = float(target_risk)
+        target_return = float(target_return)
     except ValueError:
         show_error[-2] = 'Bitte verwende ein korrektes Zahlenformat in den rot markierten Feldern'
         return show_error
