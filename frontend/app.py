@@ -32,15 +32,9 @@ def extract_isin_tuples():
     This is used for the additional ISINs dropdown
     """
     session = Session()
-    isins_db = session.query(IsinCategory)
+    isins_db = session.query(Etf.isin, Etf.name).filter(IsinCategory.etf_isin == Etf.isin).distinct().all()
 
-    isins = []
-    for isin in isins_db:
-        if not (isin.etf_isin, isin.etf_isin) in isins:
-            isins.append((isin.etf_isin, isin.etf_isin))
-
-    return isins
-
+    return [(isin, isin, name) for (isin, name) in isins_db]
 
 def extract_categories(category_types):
     """
@@ -97,7 +91,7 @@ def create_dropdown_tool_tip(dropdown_id, dropdown_data, tool_tip, width, dropdo
         html.Abbr("\u003F", title=tool_tip),
         dcc.Dropdown(
             id=dropdown_id + ' Dropdown',
-            options=[{'value': data_id, 'label': data_name} for data_id, data_name in
+            options=[{'value': data_id, 'label': data_name, 'title': title} for data_id, data_name, title in
                      sorted(dropdown_data, key=lambda x: x[1])],
             placeholder=dropdown_id,
             searchable=True,
@@ -302,13 +296,13 @@ def create_app(app):
     """
     Combines the elements into the user interface
     """
-    rr_models = [('Mittelwert/Varianz', ReturnRiskModel.MEAN_VARIANCE),
-                         ('CAPM/Semikovarianz', ReturnRiskModel.CAPM_SEMICOVARIANCE),
-                         ('Exponentieller Mittelwert/Varianz', ReturnRiskModel.EMA_VARIANCE)]
+    rr_models = [('Mittelwert/Varianz', ReturnRiskModel.MEAN_VARIANCE, None),
+                         ('CAPM/Semikovarianz', ReturnRiskModel.CAPM_SEMICOVARIANCE, None),
+                         ('Exponentieller Mittelwert/Varianz', ReturnRiskModel.EMA_VARIANCE, None)]
 
-    optimizer_methods = [('Max Sharpe', Optimizer.MAX_SHARPE),
-                         ('Effiziente Rendite', Optimizer.EFFICIENT_RETURN),
-                         ('Effizientes Risiko', Optimizer.EFFICIENT_RISK)]
+    optimizer_methods = [('Maximiere Sharpe Ratio', Optimizer.MAX_SHARPE, None),
+                         ('Minimiere Risiko', Optimizer.EFFICIENT_RETURN, 'Das Risiko wird minimiert bei einer festgelgten Zielrendite'),
+                         ('Maximiere Rendite', Optimizer.EFFICIENT_RISK, 'Die Rendite wird maximiert bei einem festgelegten Risiko')]
 
     categories = extract_categories(category_types)
 
@@ -756,7 +750,8 @@ def to_dropdown_format(list, sort_function):
     """
     Converts a list of tuples to the required list format for dropdowns
     """
-    return [{'value': int(data_id), 'label': data_name} for data_name, data_id in sorted(list, key=sort_function)]
+    return [{'value': int(data_id), 'label': data_name, 'title': tooltip}
+            for data_name, data_id, tooltip in sorted(list, key=sort_function)]
 
 
 def flatten_categories(cats_list):

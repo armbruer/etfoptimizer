@@ -120,14 +120,7 @@ def get_latest_date():
 
 def __get_isins() -> List[str]:
     session = Session()
-    isins_db = session.query(IsinCategory)
-
-    isins = []
-    for isin in isins_db:
-        if not isin.etf_isin in isins:
-            isins.append(isin.etf_isin)
-
-    return isins
+    return session.query(IsinCategory.etf_isin).distinct().all()
 
 
 def __write_history_value(isin, date, price, session):
