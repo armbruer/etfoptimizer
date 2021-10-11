@@ -166,10 +166,8 @@ def plot_efficient_frontier(
     fig.update_layout(
         xaxis_title='Volatilität',
         yaxis_title='Rendite',
-        # TODO fonts, legend title, title?
     )
 
-    # TODO hover info
     return fig
 
 
