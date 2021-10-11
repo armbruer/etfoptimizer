@@ -146,7 +146,8 @@ def create_button(button_id, button_text):
             n_clicks=0)
     ],
         id=button_id + ' Button Div',
-        style={'display': 'block'})
+        style={'display': 'block', 'padding-top': 10, 'padding-bottom': 10, 'padding-left': 25,
+               'padding-right': 25})
 
     return button
 
@@ -558,7 +559,12 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     ef_figure = plot_efficient_frontier(opt.ef, show_assets=True)
 
     # 4. Step: Prepare resulting values and bring them into a usable data format
-    leftover, res = get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm)
+    leftover, res, excpt = get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm)
+    if excpt is not None:
+        show_error[-2] = f'Während der Optimierung ist ein Fehler aufgetreten: "{str(excpt)}". ' \
+                         f'Manche Fehler können gelöst werden indem Optimierungsparameter angepasst werden!'
+        session.close()
+        return show_error
 
     # 5. Step: Show allocation results via different visuals
     pp = fill_allocation_pie(res)
@@ -590,14 +596,19 @@ def get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, targe
     Returns the allocation result for the optimization and performs data formatting
     """
 
-    if opt_method == Optimizer.MAX_SHARPE:
-        opt_res = opt.ef.max_sharpe(risk_free_rate=zinssatz)
-    elif opt_method == Optimizer.EFFICIENT_RISK:
-        opt_res = opt.ef.efficient_risk(target_volatility=target_risk)
-    elif opt_method == Optimizer.EFFICIENT_RETURN:
-        opt_res = opt.ef.efficient_return(target_return=target_return)
-    else:
-        raise ValueError('Unknown Optimizer')
+    opt_res = None
+    try:
+        if opt_method == Optimizer.MAX_SHARPE:
+            opt_res = opt.ef.max_sharpe(risk_free_rate=zinssatz)
+        elif opt_method == Optimizer.EFFICIENT_RISK:
+            opt_res = opt.ef.efficient_risk(target_volatility=target_risk)
+        elif opt_method == Optimizer.EFFICIENT_RETURN:
+            opt_res = opt.ef.efficient_return(target_return=target_return)
+    except ValueError as e:
+        return None, None, e
+
+    if opt_res is None:
+        raise ValueError("Optimization method cannot be None")
 
     weights = [(k, v) for k, v in opt.ef.clean_weights(cutoff=cutoff, rounding=rounding).items()]
     etf_weights = pd.DataFrame.from_records(weights, columns=['isin', 'weight'])
@@ -611,7 +622,7 @@ def get_alloc_result(opt, opt_method, etf_names, betrag, cutoff, zinssatz, targe
     etf_quantities = pd.DataFrame.from_records(alloc, columns=['isin', 'quantity'])
     res = res.join(etf_quantities.set_index('isin'))
     res = res.reset_index()
-    return leftover, res
+    return leftover, res, None
 
 
 def display_hist_perf(opt_method, create_hist_perf, isins, etf_names, rr_model, betrag, cutoff,
