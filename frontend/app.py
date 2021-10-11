@@ -300,7 +300,7 @@ def create_app(app):
                          ('CAPM/Semikovarianz', ReturnRiskModel.CAPM_SEMICOVARIANCE, None),
                          ('Exponentieller Mittelwert/Varianz', ReturnRiskModel.EMA_VARIANCE, None)]
 
-    optimizer_methods = [('Maximiere Sharpe Ratio', Optimizer.MAX_SHARPE, None),
+    optimizer_methods = [('Maximiere Sharpe Ratio', Optimizer.MAX_SHARPE, 'Die Rendite pro Risiko wird maximiert'),
                          ('Minimiere Risiko', Optimizer.EFFICIENT_RETURN, 'Das Risiko wird minimiert bei einer festgelgten Zielrendite'),
                          ('Maximiere Rendite', Optimizer.EFFICIENT_RISK, 'Die Rendite wird maximiert bei einem festgelegten Risiko')]
 
