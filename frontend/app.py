@@ -694,7 +694,8 @@ def prepare_hist_data(opt_method, etf_names, opt_hist, betrag, cutoff,
     during the last three years using the data from 4-6 years ago.
     """
 
-    _, res = get_alloc_result(opt_hist, opt_method, etf_names, betrag, cutoff, zinssatz, target_return, target_risk, rounding, alloc_algorithm)
+    _, res, _ = get_alloc_result(opt_hist, opt_method, etf_names, betrag, cutoff,
+                                 zinssatz, target_return, target_risk, rounding, alloc_algorithm)
     relevant_isin_weights, relevant_isins = get_relevant_isins(res)
     prices = get_prices(relevant_isins, session, start_date, end_date)
 

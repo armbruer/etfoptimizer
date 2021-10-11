@@ -12,7 +12,7 @@ from db import Session
 from db.models import Etf
 from frontend.app import create_app, prepare_hist_data, get_isins_from_filters, preprocess_isin_price_data, \
     create_figure
-from optimizer import ReturnRiskModel, PortfolioOptimizer
+from optimizer import ReturnRiskModel, PortfolioOptimizer, Optimizer
 
 
 def main():
@@ -23,7 +23,6 @@ def main():
     risk_free_rate = 0.02
     cutoff = 0.00001
     period_length_in_years = 3
-    opt_methods = [ReturnRiskModel.MEAN_VARIANCE]
 
     # open session, get ISINs and names
     session = Session()
@@ -51,30 +50,29 @@ def main():
     msci_hist['Datum'] = msci_hist['Datum'].apply(lambda x: str(x).split(" ")[0])
 
     figures = []
-    for opt_method in opt_methods:
+    price_dfs = []
 
-        price_dfs = []
-        for years in range(total_years, -1, -1):
-            start_date = datetime.now() - relativedelta(years=years + period_length_in_years)
-            end_date = start_date + relativedelta(years=period_length_in_years)
-            end_date_invest = end_date + relativedelta(years=1)
-            if end_date_invest > datetime.now():
-                break
+    for years in range(total_years, -1, -1):
+        start_date = datetime.now() - relativedelta(years=years + period_length_in_years)
+        end_date = start_date + relativedelta(years=period_length_in_years)
+        end_date_invest = end_date + relativedelta(years=1)
+        if end_date_invest > datetime.now():
+            break
 
-            preprocessed_isin = preprocess_isin_price_data(isins, session, start_date)
-            opt_hist = PortfolioOptimizer(preprocessed_isin, start_date, end_date, session, opt_method)
-            opt_hist.prepare_optmizer()
-            prices = prepare_hist_data(etf_names, opt_hist, total_portfolio_value, cutoff, risk_free_rate, rounding, session,
-                                       end_date, end_date_invest, True)
-            price_dfs.append(prices)
-            total_portfolio_value = price_dfs[len(price_dfs) - 1].iloc[-1][1]
+        preprocessed_isin = preprocess_isin_price_data(isins, session, start_date)
+        opt_hist = PortfolioOptimizer(preprocessed_isin, start_date, end_date, session, ReturnRiskModel.MEAN_VARIANCE)
+        opt_hist.prepare_optmizer()
+        prices = prepare_hist_data(Optimizer.MAX_SHARPE, etf_names, opt_hist, total_portfolio_value, cutoff,
+                                   risk_free_rate, None, None, rounding, session, end_date, end_date_invest, True)
+        price_dfs.append(prices)
+        total_portfolio_value = price_dfs[len(price_dfs) - 1].iloc[-1][1]
 
-        prices = pd.concat(price_dfs)
-        prices['Name'] = 'Optimiertes Portfolio'
+    prices = pd.concat(price_dfs)
+    prices['Name'] = 'Optimiertes Portfolio'
 
-        df = pd.concat([prices, msci_hist])
-        hist_figure = px.line(df, x=df['Datum'], y=df['Wert'])
-        figures.append(create_figure(str(opt_method), '80%', hist_figure))
+    df = pd.concat([prices, msci_hist])
+    hist_figure = px.line(df, x=df['Datum'], y=df['Wert'])
+    figures.append(create_figure("Evaluation", '80%', hist_figure))
 
     eval_app.layout = html.Div(figures)
     eval_app.run_server()
