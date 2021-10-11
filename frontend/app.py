@@ -542,6 +542,8 @@ def update_output(num_clicks, assetklasse, anlageart, region, land, währung, se
     three_years_ago = now - relativedelta(years=3)
     isins = preprocess_isin_price_data(isins, session, three_years_ago)
     etf_names = pd.read_sql(session.query(Etf.isin, Etf.name).filter(Etf.isin.in_(isins)).statement, session.bind)
+    rr_model = ReturnRiskModel(rr_model)
+    opt_method = Optimizer(opt_method)
     opt = PortfolioOptimizer(isins, three_years_ago, now, session, rr_model)
 
     if opt.prices.empty:
