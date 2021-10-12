@@ -71,7 +71,7 @@ def main():
     prices['Name'] = 'Optimiertes Portfolio'
 
     df = pd.concat([prices, msci_hist])
-    hist_figure = px.line(df, x=df['Datum'], y=df['Wert'])
+    hist_figure = px.line(df, x=df['Datum'], y=df['Wert'], color=df['Name'])
     figures.append(create_figure("Evaluation", '80%', hist_figure))
 
     eval_app.layout = html.Div(figures)
