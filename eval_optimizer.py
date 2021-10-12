@@ -72,6 +72,14 @@ def main():
 
     df = pd.concat([prices, msci_hist])
     hist_figure = px.line(df, x=df['Datum'], y=df['Wert'], color=df['Name'])
+    hist_figure.update_layout(legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ))
+
     figures.append(create_figure("Evaluation", '80%', hist_figure))
 
     eval_app.layout = html.Div(figures)
