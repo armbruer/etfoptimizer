@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date
 
 import dash_html_components as html
 import numpy as np
@@ -36,8 +36,8 @@ def main():
 
     msci_world = yf.Ticker("XWD.TO")
 
-    first_day = datetime.now() - relativedelta(years=total_years)
-    last_day = datetime.now()
+    last_day = date(2021, 5, 31)
+    first_day = last_day - relativedelta(years=total_years)
     msci_hist = msci_world.history(start=first_day, end=last_day)
     msci_hist = msci_hist.drop(columns=['Low', 'High', 'Volume', 'Dividends', 'Open', 'Stock Splits'])
 
@@ -53,10 +53,10 @@ def main():
     price_dfs = []
 
     for years in range(total_years, -1, -1):
-        start_date = datetime.now() - relativedelta(years=years + period_length_in_years)
+        start_date = last_day - relativedelta(years=years + period_length_in_years)
         end_date = start_date + relativedelta(years=period_length_in_years)
         end_date_invest = end_date + relativedelta(years=1)
-        if end_date_invest > datetime.now():
+        if end_date_invest > last_day:
             break
 
         preprocessed_isin = preprocess_isin_price_data(isins, session, start_date)
